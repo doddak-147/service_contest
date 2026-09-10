@@ -63,7 +63,7 @@ MarketRiskResult {
   warnings: string[]
 }
 
-ScenarioKey = up_20 | flat | down_10 | down_20 | down_30 | historical_mdd
+ScenarioKey = up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd
 
 ScenarioResult {
   scenario_key: ScenarioKey
@@ -77,6 +77,7 @@ ScenarioResult {
   loss_to_equity_ratio: number | null
   loss_to_emergency_fund_ratio: number | null
   loss_to_monthly_fixed_expenses: number | null
+  estimated_annual_interest_krw: integer
   estimated_monthly_interest_krw: integer
   recovery_required_rate: number | null
   unavailable_reasons: string[]
@@ -200,13 +201,14 @@ ExplanationResult {
   "loss_to_equity_ratio": 0.333333,
   "loss_to_emergency_fund_ratio": 0.4,
   "loss_to_monthly_fixed_expenses": 1.333333,
+  "estimated_annual_interest_krw": 240000,
   "estimated_monthly_interest_krw": 20000,
   "recovery_required_rate": 0.25,
   "unavailable_reasons": []
 }
 ```
 
-`scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | historical_mdd`다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
+`scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd`다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
 
 ## 3. 엔드포인트
 
@@ -243,7 +245,7 @@ ExplanationResult {
 }
 ```
 
-실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30` 다음에 MDD가 있으면 `historical_mdd`가 온다.
+실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`가 온다. 모바일의 차입투자 Stress Test는 이 중 `down_10`부터 `down_50`까지의 서버 계산 결과를 선택해 표시한다.
 
 ### `POST /api/v1/combined-analyses`
 

@@ -6,7 +6,7 @@
 
 ## MVP 구조
 
-- `apps/mobile/`: Expo + React Native + TypeScript
+- `apps/mobile/`: Flutter + Dart Android 앱
 - `apps/api/`: FastAPI + Python 계산 API
 - `docs/API_CONTRACT.md`: 모든 요청·응답 필드의 기준
 - `docs/`: 제품, 흐름, 아키텍처, 데이터 모델, 로드맵
@@ -17,7 +17,7 @@
 
 기존 API contract를 임의 변경하지 않는다. 변경이 필요하면 영향받는 네 Slice의 담당자에게 알리고 `API_CONTRACT.md`, 구현 타입, 테스트를 같은 PR에서 수정한다. 같은 개념을 다른 이름으로 다시 만들지 않는다. JSON 필드는 계약대로 `snake_case`를 사용한다.
 
-TypeScript는 `strict`, 2칸 들여쓰기, `PascalCase` 컴포넌트, `camelCase` 함수·변수를 사용한다. Python은 4칸 들여쓰기, 타입 힌트, `snake_case`를 사용한다. 금액은 정수 원(KRW) 또는 `Decimal`로 계산한다. 금융 계산은 I/O 없는 결정론적 함수로 작성한다.
+Dart는 `dart format`을 적용하고 클래스·Widget은 `PascalCase`, 함수·일반 변수는 `lowerCamelCase`를 사용한다. API DTO 프로퍼티와 JSON 키는 계약의 `snake_case`를 그대로 유지한다. Python은 4칸 들여쓰기, 타입 힌트, `snake_case`를 사용한다. 금액은 정수 원(KRW) 또는 `Decimal`로 계산한다. 금융 계산은 I/O 없는 결정론적 함수로 작성한다.
 
 새 dependency는 표준 기능이나 기존 dependency로 해결할 수 없을 때만 추가하고 PR에 이유를 적는다. 다른 feature 영역을 대규모로 refactoring하지 않는다.
 
@@ -27,6 +27,6 @@ LLM에는 이름, 재무 원본 전체, 인증정보를 보내지 않는다. 검
 
 ## 테스트와 협업
 
-계산식 변경 시 unit test를 반드시 함께 수정하고 정상값, 0인 분모, 100% 손실, 결측 시세를 검증한다. Python은 `pytest`와 Ruff, TypeScript는 ESLint를 사용한다. 프로젝트 초기화 후 루트에 `npm run dev:mobile`, `npm run dev:api`, `npm run lint`, `npm test`를 제공하되 설정 전에는 동작한다고 가정하지 않는다.
+계산식 변경 시 unit test를 반드시 함께 수정하고 정상값, 0인 분모, 100% 손실, 결측 시세를 검증한다. Python은 `pytest`와 Ruff, Flutter는 `flutter test`와 `flutter analyze`를 사용한다. 모바일은 `apps/mobile`에서 `flutter run`, API는 저장소 루트에서 `python -m uvicorn app.main:app --app-dir apps/api --reload`로 실행한다.
 
 브랜치는 `feature/<slice>-<topic>` 형식, 커밋은 `feat: add mdd impact result` 같은 Conventional Commits를 사용한다. PR은 한 Slice와 한 목적만 담고 완료 조건, 테스트 결과, UI 변경 스크린샷을 포함한다. Codex가 만든 변경은 작성자가 diff와 테스트 결과를 직접 검토한다.

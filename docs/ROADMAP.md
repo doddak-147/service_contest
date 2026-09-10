@@ -12,8 +12,8 @@
 
 ## 2. 공통 준비 — 병렬 개발 전
 
-- [ ] Expo TypeScript 앱과 단일 FastAPI 앱을 생성한다.
-- [ ] `pytest`, Ruff, ESLint와 루트 실행 명령을 구성한다.
+- [ ] Flutter/Dart Android 앱과 단일 FastAPI 앱을 생성한다.
+- [ ] `pytest`, Ruff, `flutter test`, `flutter analyze` 실행 명령을 구성한다.
 - [ ] `API_CONTRACT.md`의 요청·응답 모델과 공통 오류 코드를 팀이 검토한다.
 - [ ] 각 Slice용 고정 mock JSON과 독립 검산표를 만든다.
 - [ ] 환경변수 이름만 포함한 `.env.example`과 secret 검사 기준을 만든다.
@@ -50,13 +50,13 @@
 
 담당 범위: `stress-test`
 
-- [ ] 6개 시나리오 비교 UI와 계산 근거 펼치기를 구현한다.
+- [ ] 8개 시나리오 비교 UI와 계산 근거 펼치기를 구현한다.
 - [ ] `POST /api/v1/stress-tests/analyze` schema를 구현한다.
-- [ ] `+20%`, `0%`, `-10%`, `-20%`, `-30%`, MDD 계산 함수를 구현한다.
+- [ ] `+20%`, `0%`, `-10%`, `-20%`, `-30%`, `-40%`, `-50%`, MDD 계산 함수를 구현한다.
 - [ ] 손익, 순투자지분, 손실 대비 비율, 회복 필요 상승률을 계산한다.
 - [ ] 0%·100% 손실, 자기자본/비상자금/지출 0, 음의 순지분 테스트를 작성한다.
 
-완료 기준: FinancialProfile mock과 MDD mock만으로 여섯 시나리오를 독립 시연할 수 있다.
+완료 기준: FinancialProfile mock과 MDD mock만으로 여덟 시나리오를 독립 시연할 수 있다.
 
 ## 6. Slice D — 개인×종목 결합 Report·AI 설명
 

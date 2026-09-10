@@ -53,13 +53,13 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 ### ScenarioResult
 
-`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `historical_mdd` 중 하나다. 각 결과는 다음을 가진다.
+`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd` 중 하나다. 각 결과는 다음을 가진다.
 
 - 가정: `label`, `assumed_return_rate`
 - 자산·손익: `projected_investment_value_krw`, `investment_pnl_krw`, `investment_loss_krw`
 - 부채·지분: `reported_total_debt_krw`, `net_investment_equity_krw`
 - 충격: `loss_to_equity_ratio`, `loss_to_emergency_fund_ratio`, `loss_to_monthly_fixed_expenses`
-- 부담·회복: `estimated_monthly_interest_krw`, `recovery_required_rate`
+- 부담·회복: `estimated_annual_interest_krw`, `estimated_monthly_interest_krw`, `recovery_required_rate`
 - 예외: `unavailable_reasons`
 
 `investment_pnl_krw`는 상승 시 양수, 하락 시 음수다. `investment_loss_krw`는 손실이 없으면 0인 비음수 값이다. 가격 충격만 적용하므로 부채 원금과 월 이자는 시나리오별로 변하지 않는다.

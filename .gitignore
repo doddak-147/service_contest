@@ -1,0 +1,29 @@
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+coverage/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Local environment and secrets
+.env
+.env.*
+!.env.example
+
+# IDE and operating system
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Logs
+*.log
+npm-debug.log*
