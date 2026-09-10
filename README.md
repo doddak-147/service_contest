@@ -2,28 +2,33 @@
 
 과도한 차입투자로 인한 금융 충격을 사용자가 투자 전에 확인하도록 돕는 모바일 서비스입니다. 투자 추천, 매수·매도 판단 또는 미래 주가 예측을 제공하지 않습니다.
 
-현재 단계는 Expo 모바일 앱과 FastAPI 서버를 연결하는 Foundation입니다. 금융 분석 기능은 아직 구현하지 않았습니다.
+모바일은 Flutter/Dart Android 앱, 금융 계산 API는 FastAPI/Python으로 구성합니다. 현재 Foundation과 차입투자 Stress Test가 구현되어 있으며 종목 검색, 주가 연동, MDD·변동성, AI 설명은 아직 구현하지 않았습니다.
 
 ## 프로젝트 구조
 
 ```text
-apps/mobile/  Expo + React Native + TypeScript
-apps/api/     FastAPI + Python
+apps/mobile/  Flutter + Dart Android 앱
+apps/api/     FastAPI + Python 계산 API
 docs/         제품 명세, API 계약, 아키텍처, 로드맵
 ```
 
 ## 사전 준비
 
-- Node.js 22.13 이상과 npm
+- Flutter 3.41 이상과 Dart 3.11 이상
+- Android Studio 또는 Android SDK, 에뮬레이터
 - Python 3.11 이상
-- 모바일 확인용 Expo Go 또는 Android/iOS 에뮬레이터
+
+설치 상태는 `flutter doctor`로 확인합니다.
 
 ## 설치
 
 PowerShell 기준:
 
 ```powershell
-npm install --prefix apps/mobile
+cd apps/mobile
+flutter pub get
+cd ../..
+
 python -m venv .venv
 .\.venv\Scripts\Activate.ps1
 python -m pip install -r apps/api/requirements-dev.txt
@@ -31,47 +36,47 @@ python -m pip install -r apps/api/requirements-dev.txt
 
 macOS/Linux에서는 가상환경을 `source .venv/bin/activate`로 활성화합니다.
 
-## 환경변수
-
-모바일은 `EXPO_PUBLIC_API_BASE_URL`을 사용합니다. Android 에뮬레이터는 기본값 `http://10.0.2.2:8000`, iOS 시뮬레이터는 `http://localhost:8000`을 사용하므로 별도 설정이 필요 없습니다.
-
-실물 기기에서는 [apps/mobile/.env.example](apps/mobile/.env.example)을 `apps/mobile/.env.local`로 복사하고 개발 PC의 LAN IP로 변경합니다.
-
-```env
-EXPO_PUBLIC_API_BASE_URL=http://192.168.0.10:8000
-```
-
-`EXPO_PUBLIC_` 값은 앱에 포함되므로 secret을 넣으면 안 됩니다. 서버의 `APP_ENV`, `CORS_ORIGINS`는 필요할 때 프로세스 환경변수로 설정하며 키 목록은 [apps/api/.env.example](apps/api/.env.example)에 있습니다.
-
 ## 실행
 
-가상환경을 활성화한 뒤 서로 다른 터미널에서 실행합니다.
+첫 번째 터미널에서 FastAPI를 실행합니다.
 
 ```powershell
-npm run dev:api
-npm run dev:mobile
+.\.venv\Scripts\Activate.ps1
+python -m uvicorn app.main:app --app-dir apps/api --reload --host 0.0.0.0 --port 8000
 ```
 
-FastAPI는 `http://localhost:8000`, API 문서는 개발 환경에서 `http://localhost:8000/docs`에 열립니다. Expo 앱 시작 화면은 `GET /health`를 자동 호출하고 연결 성공 또는 실패를 표시합니다.
-
-서버만 확인하려면 다음 명령을 사용합니다.
+두 번째 터미널에서 Android 에뮬레이터를 켠 뒤 앱을 실행합니다.
 
 ```powershell
-Invoke-RestMethod http://localhost:8000/health
+cd apps/mobile
+flutter run
 ```
 
-정상 응답은 `{"status":"ok"}`입니다.
+Android 에뮬레이터에서는 기본 API 주소 `http://10.0.2.2:8000`을 사용합니다. 실물 기기는 개발 PC의 LAN IP를 전달해야 합니다.
+
+```powershell
+flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8000
+```
+
+`API_BASE_URL`은 공개 서버 주소 전용이며 API 키나 비밀번호를 넣지 않습니다. 배포 빌드는 HTTPS 주소를 사용합니다.
+
+## 기능 확인
+
+앱 시작 화면이 `GET /health`를 호출해 서버 연결 상태를 표시합니다. `Stress Test 시작하기`에서 투자정보를 입력하고 `-10%`부터 `-50%`까지 선택하면 `POST /api/v1/stress-tests/analyze`의 서버 계산 결과를 표시합니다.
+
+요청·응답 필드와 단위는 [docs/API_CONTRACT.md](docs/API_CONTRACT.md)를 따릅니다. 앱의 연이율 입력은 `%` 단위이며 요청 시 계약의 소수 단위로 변환됩니다(예: `6` → `0.06`).
 
 ## 품질 검사
 
 ```powershell
-npm run lint
-npm run typecheck
-npm test
+cd apps/mobile
+dart format --output=none --set-exit-if-changed lib test
+flutter analyze
+flutter test
+
+cd ../..
+python -m ruff check apps/api
+python -m pytest -c apps/api/pyproject.toml apps/api/tests
 ```
 
-모든 검사를 순서대로 실행하려면 `npm run check`를 사용합니다.
-
-## 문서 기준
-
-개발 전에 [AGENTS.md](AGENTS.md)와 [docs/API_CONTRACT.md](docs/API_CONTRACT.md)를 확인하세요. Foundation의 `GET /health` 외 금융 API 계약은 이번 단계에서 구현하지 않습니다.
+개발 전에 [AGENTS.md](AGENTS.md)와 [docs/API_CONTRACT.md](docs/API_CONTRACT.md)를 확인하세요. API DTO와 JSON 필드는 계약의 `snake_case` 이름을 그대로 사용합니다.

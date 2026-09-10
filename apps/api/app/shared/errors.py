@@ -21,6 +21,12 @@ class FieldError(BaseModel):
     reason: str
 
 
+class ApiValidationError(Exception):
+    def __init__(self, field_errors: list[FieldError]) -> None:
+        super().__init__("입력값을 확인해 주세요.")
+        self.field_errors = field_errors
+
+
 class ErrorDetail(BaseModel):
     code: ErrorCode
     message: str
@@ -61,6 +67,18 @@ def _json_error(
 
 
 def register_error_handlers(app: FastAPI) -> None:
+    @app.exception_handler(ApiValidationError)
+    async def api_validation_error_handler(
+        request: Request, exc: ApiValidationError
+    ) -> JSONResponse:
+        return _json_error(
+            request,
+            status_code=422,
+            code="VALIDATION_ERROR",
+            message=str(exc),
+            field_errors=exc.field_errors,
+        )
+
     @app.exception_handler(RequestValidationError)
     async def validation_error_handler(
         request: Request, exc: RequestValidationError

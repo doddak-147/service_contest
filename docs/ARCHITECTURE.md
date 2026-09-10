@@ -2,10 +2,10 @@
 
 ## 1. MVP 기술 스택
 
-- **모바일:** Expo + React Native + TypeScript
+- **모바일:** Flutter + Dart(Android)
 - **API·계산:** FastAPI + Python
 - **외부 연동:** 주가 데이터 API, 제한적 LLM API
-- **테스트·정적 검사:** pytest, Ruff, ESLint
+- **테스트·정적 검사:** pytest, Ruff, Flutter test, Flutter analyze
 - **배포:** Naver Cloud, KT Cloud, NHN Cloud 중 공모전 제공 조건에 맞는 한 곳
 
 MVP에는 Supabase, PostgreSQL, 회원가입·로그인, 서버 분석 이력, `packages/contracts` 별도 패키지를 사용하지 않는다. 필요한 데이터는 한 요청 안에서 처리하고 사용자 재무 원본은 응답 후 폐기한다. 외부 API 응답은 제공자 약관이 허용할 때만 프로세스 메모리에 짧게 캐시한다.
@@ -13,7 +13,7 @@ MVP에는 Supabase, PostgreSQL, 회원가입·로그인, 서버 분석 이력, `
 ## 2. 전체 구조
 
 ```text
-Expo Mobile
+Flutter Mobile
   ├─ 재무 입력 및 시나리오 화면
   ├─ 과거 위험 및 결합 Report
   └─ HTTPS/JSON
@@ -35,13 +35,14 @@ FastAPI 한 개만 배포하며 마이크로서비스, 메시지 큐, Kubernetes
 ```text
 apps/
   mobile/
-    src/
+    lib/
       features/
-        financial-health/
-        market-risk/
-        stress-test/
-        combined-report/
+        financial_health/
+        market_risk/
+        stress_test/
+        combined_report/
       shared/
+    test/
   api/
     app/
       features/

@@ -1,9 +1,8 @@
-# JavaScript / Expo
-node_modules/
-.expo/
-dist/
-web-build/
-*.tsbuildinfo
+# Flutter / Dart
+.dart_tool/
+.flutter-plugins-dependencies
+build/
+coverage/
 
 # Python
 .venv/
