@@ -1,3 +1,4 @@
+import 'package:financial_shock_preview/features/financial_health/models/financial_health_models.dart';
 import 'package:financial_shock_preview/features/stress_test/models/stress_test_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -26,6 +27,36 @@ void main() {
       'borrowed_amount_krw': 10000000,
       'annual_loan_rate': 0.06,
     });
+  });
+
+  test('FinancialHealthResult는 계약 응답을 파싱한다', () {
+    final result = FinancialHealthResult.fromJson({
+      'monthly_surplus_krw': 1100000,
+      'emergency_runway_months': 2.631579,
+      'leverage_ratio': 0.4,
+      'estimated_monthly_interest_krw': 20000,
+      'reported_total_debt_krw': 14000000,
+      'unavailable_reasons': <String>[],
+    });
+
+    expect(result.monthly_surplus_krw, 1100000);
+    expect(result.emergency_runway_months, 2.631579);
+    expect(result.leverage_ratio, 0.4);
+    expect(result.estimated_monthly_interest_krw, 20000);
+  });
+
+  test('FinancialHealthResult는 계산 불가 null과 사유 코드를 보존한다', () {
+    final result = FinancialHealthResult.fromJson({
+      'monthly_surplus_krw': 3000000,
+      'emergency_runway_months': null,
+      'leverage_ratio': 0.4,
+      'estimated_monthly_interest_krw': 20000,
+      'reported_total_debt_krw': 14000000,
+      'unavailable_reasons': ['ZERO_ESSENTIAL_OUTFLOW'],
+    });
+
+    expect(result.emergency_runway_months, isNull);
+    expect(result.unavailable_reasons, ['ZERO_ESSENTIAL_OUTFLOW']);
   });
 
   test('ScenarioResult는 계약 응답을 파싱한다', () {
