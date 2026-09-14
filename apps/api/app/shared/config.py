@@ -11,6 +11,7 @@ DEFAULT_CORS_ORIGINS = (
 class Settings:
     app_env: str
     cors_origins: tuple[str, ...]
+    stock_data_provider: str = "fake"
 
 
 def _parse_origins(raw_origins: str | None) -> tuple[str, ...]:
@@ -28,7 +29,13 @@ def _parse_origins(raw_origins: str | None) -> tuple[str, ...]:
 
 
 def load_settings() -> Settings:
+    app_env = os.getenv("APP_ENV", "development").strip() or "development"
+    provider = os.getenv(
+        "STOCK_DATA_PROVIDER",
+        "fake" if app_env == "test" else "naver",
+    ).strip()
     return Settings(
-        app_env=os.getenv("APP_ENV", "development").strip() or "development",
+        app_env=app_env,
         cors_origins=_parse_origins(os.getenv("CORS_ORIGINS")),
+        stock_data_provider=provider,
     )

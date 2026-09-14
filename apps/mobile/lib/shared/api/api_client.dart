@@ -60,6 +60,22 @@ class ApiClient {
     return decoded;
   }
 
+  Future<List<dynamic>> getList(String path) async {
+    final decoded = await _send(
+      () => _client.get(
+        Uri.parse('${AppConfig.apiBaseUrl}$path'),
+        headers: const {'Accept': 'application/json'},
+      ),
+    );
+    if (decoded is! List<dynamic>) {
+      throw const ApiException(
+        code: 'INVALID_RESPONSE',
+        message: '서버 응답 형식이 올바르지 않습니다.',
+      );
+    }
+    return decoded;
+  }
+
   Future<Object?> postJson(String path, Map<String, dynamic> body) {
     return _send(
       () => _client.post(
