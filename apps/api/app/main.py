@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.features.financial_health.router import router as financial_health_router
 from app.features.foundation.router import router as foundation_router
+from app.features.market_risk.router import router as market_risk_router
 from app.features.stress_test.router import router as stress_test_router
 from app.shared.config import Settings, load_settings
 from app.shared.errors import register_error_handlers
@@ -44,6 +45,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.include_router(foundation_router)
     app.include_router(financial_health_router)
     app.include_router(stress_test_router)
+    app.include_router(market_risk_router)
     return app
 
 

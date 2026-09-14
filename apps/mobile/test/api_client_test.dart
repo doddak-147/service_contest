@@ -24,6 +24,26 @@ void main() {
     expect(response, {'status': 'ok'});
   });
 
+  test('getList returns parsed json array', () async {
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/instruments/search');
+        return http.Response.bytes(
+          utf8.encode(
+            '[{"symbol":"005930","market":"KRX","name":"삼성전자","currency":"KRW"}]',
+          ),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    final list = await apiClient.getList('/api/v1/instruments/search?q=삼성');
+    expect(list.length, 1);
+    expect((list[0] as Map)['symbol'], '005930');
+  });
+
   test('공통 오류 응답의 field_errors를 보존한다', () async {
     final apiClient = ApiClient(
       client: MockClient((_) async {
