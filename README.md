@@ -2,7 +2,7 @@
 
 과도한 차입투자로 인한 금융 충격을 사용자가 투자 전에 확인하도록 돕는 모바일 서비스입니다. 투자 추천, 매수·매도 판단 또는 미래 주가 예측을 제공하지 않습니다.
 
-모바일은 Flutter/Dart Android 앱, 금융 계산 API는 FastAPI/Python으로 구성합니다. 현재 Foundation과 차입투자 Stress Test가 구현되어 있으며 종목 검색, 주가 연동, MDD·변동성, AI 설명은 아직 구현하지 않았습니다.
+모바일은 Flutter/Dart Android 앱, 금융 계산 API는 FastAPI/Python으로 구성합니다. 현재 Foundation, 개인 금융체력 분석, 차입투자 Stress Test, 종목 검색과 과거 위험 분석이 구현되어 있습니다. 개인×종목 결합 Report와 제한적 AI 설명은 이후 단계입니다.
 
 ## 프로젝트 구조
 
@@ -34,6 +34,8 @@ python -m venv .venv
 python -m pip install -r apps/api/requirements-dev.txt
 ```
 
+API는 기본적으로 네이버 금융의 국내 종목 검색·과거 시세를 사용합니다. 자동화 테스트에서는 외부 통신이 없는 Fake 어댑터를 사용하며, 제공자는 `STOCK_DATA_PROVIDER=naver|fake` 환경변수로 명시합니다. 오타나 지원하지 않는 값은 서버 시작 시 거부됩니다.
+
 macOS/Linux에서는 가상환경을 `source .venv/bin/activate`로 활성화합니다.
 
 ## 실행
@@ -62,7 +64,7 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8000
 
 ## 기능 확인
 
-앱 시작 화면이 `GET /health`를 호출해 서버 연결 상태를 표시합니다. `Stress Test 시작하기`에서 투자정보를 입력하고 `-10%`부터 `-50%`까지 선택하면 `POST /api/v1/stress-tests/analyze`의 서버 계산 결과를 표시합니다.
+앱 시작 화면이 `GET /health`를 호출해 서버 연결 상태를 표시합니다. 개인 금융체력 화면에서는 월 잉여현금, 비상자금 버팀 기간과 차입 비율을 확인할 수 있습니다. Stress Test에서는 `-10%`부터 `-50%`까지의 서버 계산 결과를 표시하며, 종목 과거 위험 화면에서는 국내 종목의 기간 수익률, 변동성, MDD와 회복 여부를 확인할 수 있습니다.
 
 요청·응답 필드와 단위는 [docs/API_CONTRACT.md](docs/API_CONTRACT.md)를 따릅니다. 앱의 연이율 입력은 `%` 단위이며 요청 시 계약의 소수 단위로 변환됩니다(예: `6` → `0.06`).
 

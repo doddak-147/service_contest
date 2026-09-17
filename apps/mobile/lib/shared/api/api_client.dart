@@ -42,7 +42,8 @@ class ApiClient {
   ApiClient({http.Client? client}) : _client = client ?? http.Client();
 
   final http.Client _client;
-  static const _timeout = Duration(seconds: 5);
+  // 종목 확인과 시세 조회(각 최대 8초), 응답 처리 여유를 포함한다.
+  static const _timeout = Duration(seconds: 20);
 
   Future<Map<String, dynamic>> getJson(String path) async {
     final decoded = await _send(

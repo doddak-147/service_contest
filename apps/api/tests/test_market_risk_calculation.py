@@ -151,6 +151,7 @@ def test_market_risk_calculation_two_points() -> None:
     assert calc.max_drawdown_rate == Decimal("-0.200000")
     # Only 1 daily return -> cannot calculate sample standard deviation (m < 2)
     assert calc.annualized_volatility is None
+    assert calc.warnings == ("INSUFFICIENT_PRICE_DATA",)
 
 
 def test_market_risk_calculation_total_loss() -> None:

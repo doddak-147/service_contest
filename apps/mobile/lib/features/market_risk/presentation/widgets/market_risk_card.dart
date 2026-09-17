@@ -170,15 +170,9 @@ class MarketRiskCard extends StatelessWidget {
                   const Divider(height: 18, color: AppColors.border),
                   _DrawdownRow(
                     label: '전고점 회복일 (Recovery)',
-                    value: result.recovery_date != null
-                        ? result.recovery_date!
-                        : '미회복 (기간 내 최고점 미달)',
-                    icon: result.recovery_date != null
-                        ? Icons.check_circle_outline
-                        : Icons.timelapse_rounded,
-                    iconColor: result.recovery_date != null
-                        ? AppColors.success
-                        : AppColors.pending,
+                    value: _recoveryLabel(result),
+                    icon: _recoveryIcon(result),
+                    iconColor: _recoveryColor(result),
                   ),
                 ],
               ),
@@ -203,7 +197,7 @@ class MarketRiskCard extends StatelessWidget {
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        '주의: ${result.warnings.join(", ")}',
+                        '주의: ${result.warnings.map(_warningLabel).join(' ')}',
                         style: const TextStyle(
                           color: AppColors.pending,
                           fontSize: 13,
@@ -253,6 +247,44 @@ class MarketRiskCard extends StatelessWidget {
     if (rate < 0) return AppColors.danger;
     return AppColors.text;
   }
+}
+
+String _recoveryLabel(MarketRiskResult result) {
+  if (result.max_drawdown_rate == null) {
+    return '계산 불가';
+  }
+  if (result.max_drawdown_rate! >= 0) {
+    return '해당 없음 (하락 구간 없음)';
+  }
+  return result.recovery_date ?? '미회복 (기간 내 최고점 미달)';
+}
+
+IconData _recoveryIcon(MarketRiskResult result) {
+  if (result.max_drawdown_rate == null) {
+    return Icons.help_outline_rounded;
+  }
+  if (result.max_drawdown_rate! >= 0 || result.recovery_date != null) {
+    return Icons.check_circle_outline;
+  }
+  return Icons.timelapse_rounded;
+}
+
+Color _recoveryColor(MarketRiskResult result) {
+  if (result.max_drawdown_rate == null) {
+    return AppColors.textMuted;
+  }
+  if (result.max_drawdown_rate! >= 0 || result.recovery_date != null) {
+    return AppColors.success;
+  }
+  return AppColors.pending;
+}
+
+String _warningLabel(String warning) {
+  return switch (warning) {
+    'INSUFFICIENT_PRICE_DATA' => '관측치가 부족해 일부 지표를 계산하지 못했습니다.',
+    'MARKET_DATA_UNAVAILABLE' => '현재 시세 데이터를 불러올 수 없습니다.',
+    _ => warning,
+  };
 }
 
 class _MetricTile extends StatelessWidget {

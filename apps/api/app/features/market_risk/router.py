@@ -19,14 +19,12 @@ router = APIRouter(prefix="/api/v1", tags=["market-risk"])
 
 def get_stock_adapter(request: Request) -> StockPriceAdapter:
     settings = getattr(request.app.state, "settings", None)
-    provider = (
-        getattr(settings, "stock_data_provider", "fake")
-        if settings
-        else "fake"
-    )
+    provider = getattr(settings, "stock_data_provider", "fake") if settings else "fake"
     if provider == "naver":
         return NaverStockPriceAdapter()
-    return FakeStockPriceAdapter()
+    if provider == "fake":
+        return FakeStockPriceAdapter()
+    raise RuntimeError("Unsupported stock data provider configuration")
 
 
 @router.get(
@@ -34,6 +32,7 @@ def get_stock_adapter(request: Request) -> StockPriceAdapter:
     response_model=list[Instrument],
 )
 async def search_instruments(
+    request: Request,
     q: Annotated[str, Query(description="검색할 종목명 또는 종목코드")],
     adapter: Annotated[StockPriceAdapter, Depends(get_stock_adapter)],
 ) -> list[Instrument]:
@@ -41,7 +40,15 @@ async def search_instruments(
     if not stripped:
         raise ApiValidationError([FieldError(field="q", reason="EMPTY_QUERY")])
 
-    results = await adapter.search_instruments(stripped)
+    try:
+        results = await adapter.search_instruments(stripped)
+    except MarketDataUnavailableError:
+        return _json_error(
+            request,
+            status_code=503,
+            code="MARKET_DATA_UNAVAILABLE",
+            message="주가 데이터 제공자와 통신할 수 없습니다.",
+        )  # type: ignore[return-value]
     return [Instrument.from_domain(inst) for inst in results]
 
 
@@ -68,13 +75,11 @@ async def get_market_risk(
         )
 
     try:
-        data_source, instrument, price_points = (
-            await adapter.get_price_history(
-                market=market,
-                symbol=symbol,
-                start_date=start_date,
-                end_date=end_date,
-            )
+        data_source, instrument, price_points = await adapter.get_price_history(
+            market=market,
+            symbol=symbol,
+            start_date=start_date,
+            end_date=end_date,
         )
     except InstrumentNotFoundError:
         return _json_error(
@@ -83,12 +88,12 @@ async def get_market_risk(
             code="INSTRUMENT_NOT_FOUND",
             message=f"해당 종목을 찾을 수 없습니다: {market}/{symbol}",
         )  # type: ignore[return-value]
-    except MarketDataUnavailableError as exc:
+    except MarketDataUnavailableError:
         return _json_error(
             request,
             status_code=503,
             code="MARKET_DATA_UNAVAILABLE",
-            message=str(exc),
+            message="주가 데이터 제공자와 통신할 수 없습니다.",
         )  # type: ignore[return-value]
 
     calc = calculate_market_risk(

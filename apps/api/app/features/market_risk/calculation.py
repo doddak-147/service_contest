@@ -1,4 +1,3 @@
-import math
 from dataclasses import dataclass
 from datetime import date
 from decimal import ROUND_HALF_UP, Decimal
@@ -52,12 +51,8 @@ def calculate_market_risk(
     n = len(sorted_points)
 
     if n < 2:
-        last_date = (
-            sorted_points[-1].date if n == 1 else requested_end_date
-        )
-        first_date = (
-            sorted_points[0].date if n == 1 else requested_start_date
-        )
+        last_date = sorted_points[-1].date if n == 1 else requested_end_date
+        first_date = sorted_points[0].date if n == 1 else requested_start_date
         return MarketRiskCalculation(
             instrument=instrument,
             period_start=first_date,
@@ -80,14 +75,14 @@ def calculate_market_risk(
     period_end = last_pt.date
     data_as_of = last_pt.date
     observation_count = n
+    warnings: list[str] = []
 
     # 1. Period return rate
     if first_pt.adjusted_close <= Decimal("0"):
         period_return_rate: Decimal | None = None
+        warnings.append("INSUFFICIENT_PRICE_DATA")
     else:
-        raw_return = (
-            last_pt.adjusted_close / first_pt.adjusted_close
-        ) - Decimal("1")
+        raw_return = (last_pt.adjusted_close / first_pt.adjusted_close) - Decimal("1")
         period_return_rate = _round_ratio(raw_return)
 
     # 2. Daily returns and Annualized volatility
@@ -102,12 +97,14 @@ def calculate_market_risk(
     m = len(daily_returns)
     if m < 2:
         annualized_volatility: Decimal | None = None
+        if "INSUFFICIENT_PRICE_DATA" not in warnings:
+            warnings.append("INSUFFICIENT_PRICE_DATA")
     else:
         mean_ret = sum(daily_returns) / Decimal(m)
         sum_sq_diff = sum((r - mean_ret) ** 2 for r in daily_returns)
         sample_variance = sum_sq_diff / Decimal(m - 1)
-        raw_vol = math.sqrt(float(sample_variance) * 252.0)
-        annualized_volatility = _round_ratio(Decimal(str(raw_vol)))
+        raw_vol = (sample_variance * Decimal("252")).sqrt()
+        annualized_volatility = _round_ratio(raw_vol)
 
     # 3. Maximum Drawdown (MDD) and Peak/Trough/Recovery dates
     # Running peak
@@ -163,5 +160,5 @@ def calculate_market_risk(
         peak_date=peak_date,
         trough_date=trough_date,
         recovery_date=recovery_date,
-        warnings=(),
+        warnings=tuple(warnings),
     )

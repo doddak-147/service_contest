@@ -55,6 +55,9 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
   bool _isLoadingRisk = false;
   String? _errorMessage;
   MarketRiskResult? _riskResult;
+  bool _showRiskRetry = false;
+  int _searchRequestId = 0;
+  int _riskRequestId = 0;
 
   @override
   void initState() {
@@ -75,16 +78,18 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
   Future<void> _handleSearch() async {
     final query = _searchController.text.trim();
     if (query.isEmpty) return;
+    final requestId = ++_searchRequestId;
 
     setState(() {
       _isSearching = true;
       _errorMessage = null;
       _searchResults = [];
+      _showRiskRetry = false;
     });
 
     try {
       final results = await _repository.searchInstruments(query);
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() {
         _searchResults = results;
         if (results.isEmpty) {
@@ -92,13 +97,13 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
         }
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() => _errorMessage = e.message);
     } catch (_) {
-      if (!mounted) return;
+      if (!mounted || requestId != _searchRequestId) return;
       setState(() => _errorMessage = '종목 검색에 실패했습니다.');
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _searchRequestId) {
         setState(() => _isSearching = false);
       }
     }
@@ -107,10 +112,13 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
   Future<void> _fetchMarketRisk() async {
     final instrument = _selectedInstrument;
     if (instrument == null) return;
+    final requestId = ++_riskRequestId;
 
     setState(() {
       _isLoadingRisk = true;
       _errorMessage = null;
+      _riskResult = null;
+      _showRiskRetry = false;
     });
 
     final now = DateTime.now();
@@ -123,26 +131,36 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
         startDate: startDate,
         endDate: now,
       );
-      if (!mounted) return;
+      if (!mounted || requestId != _riskRequestId) return;
       setState(() => _riskResult = result);
     } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = e.message);
+      if (!mounted || requestId != _riskRequestId) return;
+      setState(() {
+        _errorMessage = e.message;
+        _showRiskRetry = true;
+      });
     } catch (_) {
-      if (!mounted) return;
-      setState(() => _errorMessage = '과거 위험 데이터 조회에 실패했습니다.');
+      if (!mounted || requestId != _riskRequestId) return;
+      setState(() {
+        _errorMessage = '과거 위험 데이터 조회에 실패했습니다.';
+        _showRiskRetry = true;
+      });
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _riskRequestId) {
         setState(() => _isLoadingRisk = false);
       }
     }
   }
 
   void _selectInstrument(Instrument instrument) {
+    _searchRequestId++;
     setState(() {
       _selectedInstrument = instrument;
       _searchResults = [];
       _searchController.text = instrument.name;
+      _riskResult = null;
+      _errorMessage = null;
+      _showRiskRetry = false;
     });
     _fetchMarketRisk();
   }
@@ -225,8 +243,14 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           ? IconButton(
                               icon: const Icon(Icons.clear, size: 18),
                               onPressed: () {
+                                _searchRequestId++;
                                 _searchController.clear();
-                                setState(() => _searchResults = []);
+                                setState(() {
+                                  _searchResults = [];
+                                  _isSearching = false;
+                                  _errorMessage = null;
+                                  _showRiskRetry = false;
+                                });
                               },
                             )
                           : null,
@@ -371,7 +395,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                         ),
                       ),
                     ),
-                    if (_selectedInstrument != null)
+                    if (_showRiskRetry && _selectedInstrument != null)
                       TextButton(
                         onPressed: _fetchMarketRisk,
                         child: const Text('재시도'),

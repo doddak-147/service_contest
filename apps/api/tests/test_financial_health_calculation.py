@@ -46,7 +46,7 @@ def test_negative_monthly_surplus_is_a_valid_result() -> None:
 
     result = calculate_financial_health(profile)
 
-    # 음수 현금흐름도 사용자의 현재 상태를 보여주는 결과이므로 입력 오류로 숨기지 않는다.
+    # 음수 현금흐름도 현재 상태를 보여주는 결과이므로 입력 오류로 숨기지 않는다.
     assert result.monthly_surplus_krw == -500_000
 
 
