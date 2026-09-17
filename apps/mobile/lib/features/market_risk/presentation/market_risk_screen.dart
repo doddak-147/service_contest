@@ -324,14 +324,17 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                       const Divider(height: 1, color: AppColors.border),
                   itemBuilder: (context, index) {
                     final item = _searchResults[index];
-                    return ListTile(
-                      title: Text(
-                        item.name,
-                        style: const TextStyle(fontWeight: FontWeight.w700),
+                    return Material(
+                      color: Colors.transparent,
+                      child: ListTile(
+                        title: Text(
+                          item.name,
+                          style: const TextStyle(fontWeight: FontWeight.w700),
+                        ),
+                        subtitle: Text('${item.symbol} · ${item.market}'),
+                        trailing: const Icon(Icons.chevron_right, size: 20),
+                        onTap: () => _selectInstrument(item),
                       ),
-                      subtitle: Text('${item.symbol} · ${item.market}'),
-                      trailing: const Icon(Icons.chevron_right, size: 20),
-                      onTap: () => _selectInstrument(item),
                     );
                   },
                 ),

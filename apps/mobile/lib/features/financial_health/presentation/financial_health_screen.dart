@@ -20,9 +20,13 @@ class FinancialHealthScreen extends StatefulWidget {
 class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   // API_CONTRACT.md의 예시값을 기본값으로 두면 팀원이 앱을 켠 즉시 검산할 수 있다.
   final _monthlyIncomeController = TextEditingController(text: '3000000');
-  final _monthlyFixedExpensesController = TextEditingController(text: '1500000');
+  final _monthlyFixedExpensesController = TextEditingController(
+    text: '1500000',
+  );
   final _emergencyFundController = TextEditingController(text: '5000000');
-  final _existingLoanBalanceController = TextEditingController(text: '10000000');
+  final _existingLoanBalanceController = TextEditingController(
+    text: '10000000',
+  );
   final _monthlyDebtPaymentController = TextEditingController(text: '400000');
   final _plannedInvestmentController = TextEditingController(text: '10000000');
   final _equityAmountController = TextEditingController(text: '6000000');

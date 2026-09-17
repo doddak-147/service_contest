@@ -38,9 +38,19 @@ void main() {
       ),
     );
 
-    await tester.ensureVisible(find.text('금융체력 계산하기'));
-    await tester.tap(find.text('금융체력 계산하기'));
+    final calculateButton = find.widgetWithText(FilledButton, '금융체력 계산하기');
+    await tester.scrollUntilVisible(
+      calculateButton,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(calculateButton);
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('FINANCIAL HEALTH 결과'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.text('1,100,000원'), findsOneWidget);
     expect(find.text('약 2.63개월'), findsOneWidget);
@@ -81,8 +91,13 @@ void main() {
       ),
     );
 
-    await tester.ensureVisible(find.text('금융체력 계산하기'));
-    await tester.tap(find.text('금융체력 계산하기'));
+    final calculateButton = find.widgetWithText(FilledButton, '금융체력 계산하기');
+    await tester.scrollUntilVisible(
+      calculateButton,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(calculateButton);
     await tester.pumpAndSettle();
 
     expect(find.text('자기자본과 투자용 차입금의 합이 총 투자 예정금액과 같아야 합니다.'), findsOneWidget);
