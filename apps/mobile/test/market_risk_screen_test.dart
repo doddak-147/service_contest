@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:financial_shock_preview/features/market_risk/models/market_risk_models.dart';
 import 'package:financial_shock_preview/features/market_risk/presentation/market_risk_screen.dart';
 import 'package:financial_shock_preview/features/market_risk/presentation/widgets/market_risk_card.dart';
+import 'package:financial_shock_preview/features/stress_test/presentation/stress_test_screen.dart';
 import 'package:financial_shock_preview/shared/api/api_client.dart';
 import 'package:financial_shock_preview/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -93,6 +94,20 @@ void main() {
     expect(find.text('2025-08-15'), findsOneWidget);
     expect(find.text('2025-11-20'), findsOneWidget);
     expect(find.text('fake_provider'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('이 MDD로 Stress Test 진행'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('이 MDD로 Stress Test 진행'));
+    await tester.pumpAndSettle();
+
+    final stressTestScreen = tester.widget<StressTestScreen>(
+      find.byType(StressTestScreen),
+    );
+    expect(stressTestScreen.historicalMddRate, -0.285);
+    expect(stressTestScreen.historicalMddSource, '삼성전자');
   });
 
   testWidgets('검색 결과를 선택해 해당 종목 위험을 조회한다', (tester) async {

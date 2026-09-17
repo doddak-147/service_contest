@@ -7,6 +7,7 @@ from app.features.stress_test.calculation import (
     CalculationInputError,
     FinancialProfile,
     calculate_scenario,
+    calculate_stress_tests,
 )
 
 
@@ -147,3 +148,54 @@ def test_wrong_rate_for_scenario_key_is_rejected() -> None:
 
     assert exc_info.value.field == "scenario_key"
     assert exc_info.value.reason == "INVALID_SCENARIO_RATE"
+
+
+def test_all_scenarios_include_historical_mdd_and_financial_context() -> None:
+    profile = replace(
+        make_profile(),
+        emergency_fund_krw=5_000_000,
+        existing_loan_balance_krw=10_000_000,
+        monthly_debt_payment_krw=400_000,
+    )
+
+    results = calculate_stress_tests(profile, Decimal("-0.30"))
+
+    assert [result.scenario_key for result in results] == [
+        "up_20",
+        "flat",
+        "down_10",
+        "down_20",
+        "down_30",
+        "down_40",
+        "down_50",
+        "historical_mdd",
+    ]
+    historical_mdd = results[-1]
+    assert historical_mdd.reported_total_debt_krw == 20_000_000
+    assert historical_mdd.loss_to_emergency_fund_ratio == Decimal("0.900000")
+    assert historical_mdd.recovery_required_rate == Decimal("0.428571")
+
+
+def test_total_loss_has_no_finite_recovery_rate() -> None:
+    result = calculate(make_profile(), "historical_mdd", "-1")
+
+    assert result.projected_investment_value_krw == 0
+    assert result.recovery_required_rate is None
+    assert "NO_FINITE_RECOVERY_RATE" in result.unavailable_reasons
+
+
+def test_zero_denominators_return_null_with_reasons() -> None:
+    profile = replace(
+        make_profile(),
+        emergency_fund_krw=0,
+        monthly_fixed_expenses_krw=0,
+    )
+
+    result = calculate(profile, "down_20", "-0.20")
+
+    assert result.loss_to_emergency_fund_ratio is None
+    assert result.loss_to_monthly_fixed_expenses is None
+    assert result.unavailable_reasons == (
+        "ZERO_EMERGENCY_FUND",
+        "ZERO_FIXED_EXPENSES",
+    )

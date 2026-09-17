@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/market_risk_repository.dart';
 import '../models/market_risk_models.dart';
 import 'widgets/market_risk_card.dart';
@@ -431,8 +432,28 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
               ),
 
             // Result Card
-            if (!_isLoadingRisk && _riskResult != null)
+            if (!_isLoadingRisk && _riskResult != null) ...[
               MarketRiskCard(result: _riskResult!),
+              if (_riskResult!.max_drawdown_rate != null) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    final result = _riskResult!;
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => StressTestScreen(
+                          apiClient: widget.apiClient,
+                          historicalMddRate: result.max_drawdown_rate,
+                          historicalMddSource: result.instrument.name,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('이 MDD로 Stress Test 진행'),
+                ),
+              ],
+            ],
           ],
         ),
       ),

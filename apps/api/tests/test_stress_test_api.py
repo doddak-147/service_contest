@@ -131,6 +131,23 @@ def test_invalid_historical_decline_rate_is_rejected() -> None:
     ]
 
 
+def test_historical_mdd_is_appended_to_fixed_scenarios() -> None:
+    request = valid_request()
+    request["financial_profile"]["emergency_fund_krw"] = 5_000_000
+    request["financial_profile"]["existing_loan_balance_krw"] = 10_000_000
+    request["financial_profile"]["monthly_debt_payment_krw"] = 400_000
+    request["historical_mdd_rate"] = -0.3
+
+    with make_client() as client:
+        response = client.post("/api/v1/stress-tests/analyze", json=request)
+
+    assert response.status_code == 200
+    historical_mdd = response.json()[-1]
+    assert historical_mdd["scenario_key"] == "historical_mdd"
+    assert historical_mdd["loss_to_emergency_fund_ratio"] == 0.9
+    assert historical_mdd["reported_total_debt_krw"] == 20_000_000
+
+
 def test_wrong_json_type_uses_common_error_response() -> None:
     request = valid_request()
     request["financial_profile"]["planned_investment_krw"] = "15000000"

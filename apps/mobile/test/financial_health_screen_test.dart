@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:financial_shock_preview/features/financial_health/presentation/financial_health_screen.dart';
+import 'package:financial_shock_preview/features/stress_test/presentation/stress_test_screen.dart';
 import 'package:financial_shock_preview/shared/api/api_client.dart';
 import 'package:financial_shock_preview/shared/theme/app_theme.dart';
 import 'package:flutter/material.dart';
@@ -56,6 +57,24 @@ void main() {
     expect(find.text('약 2.63개월'), findsOneWidget);
     expect(find.text('40.0%'), findsOneWidget);
     expect(find.text('14,000,000원'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('이 정보로 Stress Test 진행'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('이 정보로 Stress Test 진행'));
+    await tester.pumpAndSettle();
+
+    final stressTestScreen = tester.widget<StressTestScreen>(
+      find.byType(StressTestScreen),
+    );
+    expect(stressTestScreen.initialProfile?.emergency_fund_krw, 5000000);
+    expect(
+      stressTestScreen.initialProfile?.existing_loan_balance_krw,
+      10000000,
+    );
+    expect(stressTestScreen.initialProfile?.monthly_debt_payment_krw, 400000);
   });
 
   testWidgets('서버 필드 오류를 쉬운 한국어로 표시하고 결과를 숨긴다', (tester) async {
