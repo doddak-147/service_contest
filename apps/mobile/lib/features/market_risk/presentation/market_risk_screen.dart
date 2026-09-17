@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../combined_report/presentation/combined_report_screen.dart';
+import '../../stress_test/models/stress_test_models.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/market_risk_repository.dart';
 import '../models/market_risk_models.dart';
@@ -21,11 +23,13 @@ class MarketRiskScreen extends StatefulWidget {
   const MarketRiskScreen({
     required this.apiClient,
     this.initialInstrument,
+    this.financialProfile,
     super.key,
   });
 
   final ApiClient apiClient;
   final Instrument? initialInstrument;
+  final FinancialProfileInput? financialProfile;
 
   @override
   State<MarketRiskScreen> createState() => _MarketRiskScreenState();
@@ -108,6 +112,17 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
         setState(() => _isSearching = false);
       }
     }
+  }
+
+  void _handleSearchTextChanged(String _) {
+    _searchRequestId++;
+    setState(() {
+      _searchResults = [];
+      _isSearching = false;
+      if (!_showRiskRetry) {
+        _errorMessage = null;
+      }
+    });
   }
 
   Future<void> _fetchMarketRisk() async {
@@ -257,7 +272,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           : null,
                     ),
                     onSubmitted: (_) => _handleSearch(),
-                    onChanged: (_) => setState(() {}),
+                    onChanged: _handleSearchTextChanged,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -434,6 +449,27 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
             // Result Card
             if (!_isLoadingRisk && _riskResult != null) ...[
               MarketRiskCard(result: _riskResult!),
+              if (widget.financialProfile != null) ...[
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: () {
+                    final result = _riskResult!;
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => CombinedReportScreen(
+                          apiClient: widget.apiClient,
+                          financialProfile: widget.financialProfile!,
+                          instrument: result.instrument,
+                          periodStart: result.period_start,
+                          periodEnd: result.period_end,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.assessment_outlined),
+                  label: const Text('개인 × 종목 결합 Report 보기'),
+                ),
+              ],
               if (_riskResult!.max_drawdown_rate != null) ...[
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
@@ -443,6 +479,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                       MaterialPageRoute<void>(
                         builder: (_) => StressTestScreen(
                           apiClient: widget.apiClient,
+                          initialProfile: widget.financialProfile,
                           historicalMddRate: result.max_drawdown_rate,
                           historicalMddSource: result.instrument.name,
                         ),

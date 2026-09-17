@@ -62,8 +62,8 @@
 
 담당 범위: `combined-report`
 
-- [ ] 개인 금융체력과 MDD 영향을 연결한 Report UI를 구현한다.
-- [ ] `POST /api/v1/combined-analyses` 조합 API와 실패 시 부분 결과를 구현한다.
+- [x] 개인 금융체력과 MDD 영향을 연결한 Report UI를 구현한다.
+- [x] `POST /api/v1/combined-analyses` 조합 API와 실패 시 부분 결과를 구현한다.
 - [ ] LLM 최소 입력 DTO와 `POST /api/v1/explanations`를 구현한다.
 - [ ] 계산값만 사용해 쉬운 한국어를 생성하는 prompt와 정적 fallback을 작성한다.
 - [ ] 새 숫자, 투자 추천, 미래 예측을 거부하는 출력 검증을 구현한다.
@@ -73,8 +73,8 @@
 
 ## 7. 통합
 
-- [ ] A~C 실제 응답을 D의 mock 대신 연결한다.
-- [ ] 동일 MDD가 시장 위험, 결합 분석, 시나리오에서 일치하는지 contract test를 작성한다.
+- [x] A~C 실제 응답을 D의 mock 대신 연결한다.
+- [x] 동일 MDD가 시장 위험, 결합 분석, 시나리오에서 일치하는지 contract test를 작성한다.
 - [ ] 온보딩부터 Report까지 전체 사용자 흐름을 테스트한다.
 - [ ] 느린 네트워크, 시세 장애, LLM 장애, 잘못된 입력을 실제 기기에서 확인한다.
 - [ ] 재무값과 LLM payload가 로그에 남지 않는지 확인한다.

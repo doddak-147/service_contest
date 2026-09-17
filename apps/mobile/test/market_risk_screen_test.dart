@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:financial_shock_preview/features/market_risk/models/market_risk_models.dart';
 import 'package:financial_shock_preview/features/market_risk/presentation/market_risk_screen.dart';
 import 'package:financial_shock_preview/features/market_risk/presentation/widgets/market_risk_card.dart';
+import 'package:financial_shock_preview/features/stress_test/models/stress_test_models.dart';
 import 'package:financial_shock_preview/features/stress_test/presentation/stress_test_screen.dart';
 import 'package:financial_shock_preview/shared/api/api_client.dart';
 import 'package:financial_shock_preview/shared/theme/app_theme.dart';
@@ -11,6 +12,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+
+const _financialProfile = FinancialProfileInput(
+  monthly_income_krw: 3000000,
+  monthly_fixed_expenses_krw: 1500000,
+  emergency_fund_krw: 5000000,
+  existing_loan_balance_krw: 10000000,
+  monthly_debt_payment_krw: 400000,
+  planned_investment_krw: 10000000,
+  equity_amount_krw: 6000000,
+  borrowed_amount_krw: 4000000,
+  annual_loan_rate: 0.06,
+);
 
 void main() {
   testWidgets('MarketRiskScreen renders search input and popular chips', (
@@ -76,7 +89,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: MarketRiskScreen(apiClient: apiClient),
+        home: MarketRiskScreen(
+          apiClient: apiClient,
+          financialProfile: _financialProfile,
+        ),
       ),
     );
 
@@ -108,6 +124,54 @@ void main() {
     );
     expect(stressTestScreen.historicalMddRate, -0.285);
     expect(stressTestScreen.historicalMddSource, '삼성전자');
+    expect(stressTestScreen.initialProfile?.monthly_income_krw, 3000000);
+    expect(stressTestScreen.initialProfile?.borrowed_amount_krw, 4000000);
+  });
+
+  testWidgets('검색 요청 중 검색어를 수정하면 이전 검색 결과를 표시하지 않는다', (tester) async {
+    final searchResponse = Completer<http.Response>();
+    final apiClient = ApiClient(
+      client: MockClient((request) {
+        expect(request.url.path, '/api/v1/instruments/search');
+        return searchResponse.future;
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MarketRiskScreen(apiClient: apiClient),
+      ),
+    );
+
+    await tester.enterText(find.byType(TextField), '삼성전자');
+    await tester.tap(find.text('검색'));
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField), '카카오');
+    await tester.pump();
+
+    searchResponse.complete(
+      http.Response.bytes(
+        utf8.encode(
+          jsonEncode([
+            {
+              'symbol': '005930',
+              'market': 'KRX',
+              'name': '삼성전자',
+              'currency': 'KRW',
+            },
+          ]),
+        ),
+        200,
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.widgetWithText(ListTile, '삼성전자'), findsNothing);
+    final searchField = tester.widget<TextField>(find.byType(TextField));
+    expect(searchField.controller?.text, '카카오');
   });
 
   testWidgets('검색 결과를 선택해 해당 종목 위험을 조회한다', (tester) async {

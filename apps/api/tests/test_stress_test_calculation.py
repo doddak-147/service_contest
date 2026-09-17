@@ -99,11 +99,7 @@ def test_loss_can_exceed_equity_and_produce_negative_net_equity() -> None:
             "planned_investment_krw",
             "MUST_BE_GREATER_THAN_ZERO",
         ),
-        (
-            {"equity_amount_krw": 0, "borrowed_amount_krw": 15_000_000},
-            "equity_amount_krw",
-            "MUST_BE_GREATER_THAN_ZERO",
-        ),
+        ({"equity_amount_krw": -1}, "equity_amount_krw", "MUST_BE_NON_NEGATIVE"),
         ({"borrowed_amount_krw": -1}, "borrowed_amount_krw", "MUST_BE_NON_NEGATIVE"),
         (
             {"annual_loan_rate": Decimal("-0.01")},
@@ -199,3 +195,16 @@ def test_zero_denominators_return_null_with_reasons() -> None:
         "ZERO_EMERGENCY_FUND",
         "ZERO_FIXED_EXPENSES",
     )
+
+
+def test_zero_equity_returns_null_ratio_with_reason() -> None:
+    profile = replace(
+        make_profile(),
+        equity_amount_krw=0,
+        borrowed_amount_krw=15_000_000,
+    )
+
+    result = calculate(profile, "down_20", "-0.20")
+
+    assert result.loss_to_equity_ratio is None
+    assert "ZERO_EQUITY" in result.unavailable_reasons

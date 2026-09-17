@@ -81,6 +81,7 @@ def validate_financial_profile(profile: FinancialProfile) -> None:
         "emergency_fund_krw",
         "existing_loan_balance_krw",
         "monthly_debt_payment_krw",
+        "equity_amount_krw",
         "borrowed_amount_krw",
     )
     for field in non_negative_fields:
@@ -90,10 +91,6 @@ def validate_financial_profile(profile: FinancialProfile) -> None:
     if profile.planned_investment_krw <= 0:
         raise CalculationInputError(
             "planned_investment_krw", "MUST_BE_GREATER_THAN_ZERO"
-        )
-    if profile.equity_amount_krw <= 0:
-        raise CalculationInputError(
-            "equity_amount_krw", "MUST_BE_GREATER_THAN_ZERO"
         )
     if not profile.annual_loan_rate.is_finite() or not (
         Decimal("0") <= profile.annual_loan_rate <= Decimal("1")
@@ -145,8 +142,17 @@ def calculate_scenario(
     )
 
     unavailable_reasons: list[str] = []
+    loss_to_equity_ratio: Decimal | None
     loss_to_emergency_fund_ratio: Decimal | None
     loss_to_monthly_fixed_expenses: Decimal | None
+
+    if profile.equity_amount_krw == 0:
+        loss_to_equity_ratio = None
+        unavailable_reasons.append("ZERO_EQUITY")
+    else:
+        loss_to_equity_ratio = _round_ratio(
+            investment_loss / Decimal(profile.equity_amount_krw)
+        )
 
     if profile.emergency_fund_krw == 0:
         loss_to_emergency_fund_ratio = None
@@ -185,9 +191,7 @@ def calculate_scenario(
         net_investment_equity_krw=_round_money(
             projected_value - Decimal(profile.borrowed_amount_krw)
         ),
-        loss_to_equity_ratio=_round_ratio(
-            investment_loss / Decimal(profile.equity_amount_krw)
-        ),
+        loss_to_equity_ratio=loss_to_equity_ratio,
         loss_to_emergency_fund_ratio=loss_to_emergency_fund_ratio,
         loss_to_monthly_fixed_expenses=loss_to_monthly_fixed_expenses,
         estimated_annual_interest_krw=_round_money(annual_interest),

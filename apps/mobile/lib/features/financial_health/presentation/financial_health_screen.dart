@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../stress_test/models/stress_test_models.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/financial_health_api.dart';
@@ -39,6 +40,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   FinancialProfileInput? _analyzedProfile;
   String? _errorMessage;
   bool _isLoading = false;
+  int _requestId = 0;
 
   static const _fieldLabels = {
     'monthly_income_krw': '월 소득',
@@ -119,16 +121,19 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   }
 
   void _clearResultOnEdit(String _) {
-    if (_result != null || _errorMessage != null) {
+    _requestId++;
+    if (_result != null || _errorMessage != null || _isLoading) {
       setState(() {
         _result = null;
         _analyzedProfile = null;
         _errorMessage = null;
+        _isLoading = false;
       });
     }
   }
 
   Future<void> _analyze() async {
+    final requestId = ++_requestId;
     FocusManager.instance.primaryFocus?.unfocus();
     setState(() {
       _errorMessage = null;
@@ -139,7 +144,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
       // 금융 계산은 서버가 담당한다. Flutter는 입력 전송과 결과 표시만 수행한다.
       final profile = _buildProfile();
       final result = await _financialHealthApi.analyze(profile);
-      if (!mounted) {
+      if (!mounted || requestId != _requestId) {
         return;
       }
       setState(() {
@@ -147,7 +152,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
         _analyzedProfile = profile;
       });
     } catch (error) {
-      if (!mounted) {
+      if (!mounted || requestId != _requestId) {
         return;
       }
       setState(() {
@@ -156,7 +161,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
         _errorMessage = _messageFor(error);
       });
     } finally {
-      if (mounted) {
+      if (mounted && requestId == _requestId) {
         setState(() => _isLoading = false);
       }
     }
@@ -335,6 +340,21 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('이 정보로 Stress Test 진행'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => MarketRiskScreen(
+                          apiClient: widget.apiClient,
+                          financialProfile: _analyzedProfile,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.assessment_outlined),
+                  label: const Text('종목 선택 후 결합 Report 만들기'),
                 ),
               ],
             ],
