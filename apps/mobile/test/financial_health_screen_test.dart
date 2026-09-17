@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:financial_shock_preview/features/financial_health/presentation/financial_health_screen.dart';
@@ -138,5 +139,51 @@ void main() {
 
     expect(find.text('자기자본과 투자용 차입금의 합이 총 투자 예정금액과 같아야 합니다.'), findsOneWidget);
     expect(find.text('FINANCIAL HEALTH 결과'), findsNothing);
+  });
+
+  testWidgets('분석 요청 중 입력을 수정하면 이전 입력의 응답을 표시하지 않는다', (tester) async {
+    final response = Completer<http.Response>();
+    final apiClient = ApiClient(client: MockClient((_) => response.future));
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: FinancialHealthScreen(apiClient: apiClient),
+      ),
+    );
+
+    final calculateButton = find.widgetWithText(FilledButton, '금융체력 계산하기');
+    await tester.scrollUntilVisible(
+      calculateButton,
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(calculateButton);
+    await tester.pump();
+
+    await tester.enterText(find.byType(TextField).first, '3500000');
+    await tester.pump();
+
+    response.complete(
+      http.Response.bytes(
+        utf8.encode(
+          jsonEncode({
+            'monthly_surplus_krw': 1100000,
+            'emergency_runway_months': 2.631579,
+            'leverage_ratio': 0.4,
+            'estimated_monthly_interest_krw': 20000,
+            'reported_total_debt_krw': 14000000,
+            'unavailable_reasons': <String>[],
+          }),
+        ),
+        200,
+        headers: {'content-type': 'application/json'},
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('FINANCIAL HEALTH 결과'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }

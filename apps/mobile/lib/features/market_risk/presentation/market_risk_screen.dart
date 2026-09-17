@@ -114,6 +114,17 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
     }
   }
 
+  void _handleSearchTextChanged(String _) {
+    _searchRequestId++;
+    setState(() {
+      _searchResults = [];
+      _isSearching = false;
+      if (!_showRiskRetry) {
+        _errorMessage = null;
+      }
+    });
+  }
+
   Future<void> _fetchMarketRisk() async {
     final instrument = _selectedInstrument;
     if (instrument == null) return;
@@ -261,7 +272,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           : null,
                     ),
                     onSubmitted: (_) => _handleSearch(),
-                    onChanged: (_) => setState(() {}),
+                    onChanged: _handleSearchTextChanged,
                   ),
                 ),
                 const SizedBox(width: 8),
@@ -468,6 +479,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                       MaterialPageRoute<void>(
                         builder: (_) => StressTestScreen(
                           apiClient: widget.apiClient,
+                          initialProfile: widget.financialProfile,
                           historicalMddRate: result.max_drawdown_rate,
                           historicalMddSource: result.instrument.name,
                         ),
