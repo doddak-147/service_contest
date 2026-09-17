@@ -22,6 +22,8 @@ abstract final class ScenarioKeys {
     historicalMdd,
   };
 
+  static const fixed = [up20, flat, down10, down20, down30, down40, down50];
+
   static const declines = [down10, down20, down30, down40, down50];
 }
 

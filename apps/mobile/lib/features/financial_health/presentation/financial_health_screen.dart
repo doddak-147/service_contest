@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../stress_test/models/stress_test_models.dart';
+import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/financial_health_api.dart';
 import '../models/financial_health_models.dart';
 import 'widgets/financial_health_result_card.dart';
@@ -35,6 +36,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
 
   late final FinancialHealthApi _financialHealthApi;
   FinancialHealthResult? _result;
+  FinancialProfileInput? _analyzedProfile;
   String? _errorMessage;
   bool _isLoading = false;
 
@@ -120,6 +122,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
     if (_result != null || _errorMessage != null) {
       setState(() {
         _result = null;
+        _analyzedProfile = null;
         _errorMessage = null;
       });
     }
@@ -134,17 +137,22 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
 
     try {
       // 금융 계산은 서버가 담당한다. Flutter는 입력 전송과 결과 표시만 수행한다.
-      final result = await _financialHealthApi.analyze(_buildProfile());
+      final profile = _buildProfile();
+      final result = await _financialHealthApi.analyze(profile);
       if (!mounted) {
         return;
       }
-      setState(() => _result = result);
+      setState(() {
+        _result = result;
+        _analyzedProfile = profile;
+      });
     } catch (error) {
       if (!mounted) {
         return;
       }
       setState(() {
         _result = null;
+        _analyzedProfile = null;
         _errorMessage = _messageFor(error);
       });
     } finally {
@@ -312,6 +320,23 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
               ),
               const SizedBox(height: 16),
               FinancialHealthResultCard(result: _result!),
+              if (_analyzedProfile != null) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => StressTestScreen(
+                          apiClient: widget.apiClient,
+                          initialProfile: _analyzedProfile,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.arrow_forward),
+                  label: const Text('이 정보로 Stress Test 진행'),
+                ),
+              ],
             ],
           ],
         ),

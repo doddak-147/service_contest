@@ -245,7 +245,7 @@ ExplanationResult {
 }
 ```
 
-실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`가 온다. 모바일의 차입투자 Stress Test는 이 중 `down_10`부터 `down_50`까지의 서버 계산 결과를 선택해 표시한다.
+실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`가 온다. 모바일의 차입투자 Stress Test는 반환된 전체 시나리오를 선택·비교해 표시한다.
 
 ### `POST /api/v1/combined-analyses`
 
