@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:financial_shock_preview/features/financial_health/presentation/financial_health_screen.dart';
+import 'package:financial_shock_preview/features/market_risk/presentation/market_risk_screen.dart';
 import 'package:financial_shock_preview/features/stress_test/presentation/stress_test_screen.dart';
 import 'package:financial_shock_preview/shared/api/api_client.dart';
 import 'package:financial_shock_preview/shared/theme/app_theme.dart';
@@ -75,6 +76,22 @@ void main() {
       10000000,
     );
     expect(stressTestScreen.initialProfile?.monthly_debt_payment_krw, 400000);
+
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('종목 선택 후 결합 Report 만들기'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('종목 선택 후 결합 Report 만들기'));
+    await tester.pumpAndSettle();
+
+    final marketRiskScreen = tester.widget<MarketRiskScreen>(
+      find.byType(MarketRiskScreen),
+    );
+    expect(marketRiskScreen.financialProfile?.emergency_fund_krw, 5000000);
+    expect(marketRiskScreen.financialProfile?.borrowed_amount_krw, 4000000);
   });
 
   testWidgets('서버 필드 오류를 쉬운 한국어로 표시하고 결과를 숨긴다', (tester) async {

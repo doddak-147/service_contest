@@ -273,6 +273,7 @@ String _formatAssumedRate(double rate) {
 
 String _reasonMessage(String reason) {
   return switch (reason) {
+    'ZERO_EQUITY' => '자기자본이 0원이라 자기자본 대비 손실률을 계산할 수 없습니다.',
     'ZERO_EMERGENCY_FUND' => '비상자금이 0원이라 비상자금 대비 손실률을 계산할 수 없습니다.',
     'ZERO_FIXED_EXPENSES' => '월 고정지출이 0원이라 생활비 기준 손실 규모를 계산할 수 없습니다.',
     'NO_FINITE_RECOVERY_RATE' => '투자금을 전부 잃은 경우 유한한 상승률로 원금을 회복할 수 없습니다.',

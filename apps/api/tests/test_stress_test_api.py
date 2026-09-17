@@ -88,7 +88,7 @@ def test_invalid_financial_input_uses_common_error_response(
     assert body["error"]["request_id"] == response.headers["X-Request-ID"]
 
 
-def test_zero_equity_is_rejected() -> None:
+def test_zero_equity_returns_null_ratio_with_reason() -> None:
     request = deepcopy(valid_request())
     request["financial_profile"]["equity_amount_krw"] = 0
     request["financial_profile"]["borrowed_amount_krw"] = 15_000_000
@@ -96,13 +96,12 @@ def test_zero_equity_is_rejected() -> None:
     with make_client() as client:
         response = client.post("/api/v1/stress-tests/analyze", json=request)
 
-    assert response.status_code == 422
-    assert response.json()["error"]["field_errors"] == [
-        {
-            "field": "equity_amount_krw",
-            "reason": "MUST_BE_GREATER_THAN_ZERO",
-        }
-    ]
+    assert response.status_code == 200
+    down_20 = next(
+        result for result in response.json() if result["scenario_key"] == "down_20"
+    )
+    assert down_20["loss_to_equity_ratio"] is None
+    assert "ZERO_EQUITY" in down_20["unavailable_reasons"]
 
 
 def test_investment_composition_mismatch_is_rejected() -> None:

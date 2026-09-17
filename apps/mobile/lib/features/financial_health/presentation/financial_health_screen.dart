@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../stress_test/models/stress_test_models.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/financial_health_api.dart';
@@ -335,6 +336,21 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                   },
                   icon: const Icon(Icons.arrow_forward),
                   label: const Text('이 정보로 Stress Test 진행'),
+                ),
+                const SizedBox(height: 8),
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => MarketRiskScreen(
+                          apiClient: widget.apiClient,
+                          financialProfile: _analyzedProfile,
+                        ),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.assessment_outlined),
+                  label: const Text('종목 선택 후 결합 Report 만들기'),
                 ),
               ],
             ],
