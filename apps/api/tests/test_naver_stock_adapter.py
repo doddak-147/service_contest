@@ -76,6 +76,39 @@ def test_get_price_history_resolves_name_and_parses_prices() -> None:
     asyncio.run(run())
 
 
+def test_get_price_history_normalizes_duplicate_trading_dates() -> None:
+    xml = """<?xml version="1.0" encoding="EUC-KR" ?>
+    <protocol><chartdata name="CJ">
+      <item data="20240102|100|110|90|105|1000" />
+      <item data="20240102|100|115|90|108|1100" />
+      <item data="20240103|108|120|100|115|1200" />
+    </chartdata></protocol>""".encode("euc-kr")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ac.stock.naver.com":
+            return httpx.Response(200, json=autocomplete_response([stock_item()]))
+        return httpx.Response(200, content=xml)
+
+    async def run() -> None:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            _source, _instrument, points = await NaverStockPriceAdapter(
+                client
+            ).get_price_history(
+                "KRX",
+                "001040",
+                date(2024, 1, 1),
+                date(2024, 1, 31),
+            )
+
+        assert [point.date for point in points] == [
+            date(2024, 1, 2),
+            date(2024, 1, 3),
+        ]
+        assert [point.adjusted_close for point in points] == [108, 115]
+
+    asyncio.run(run())
+
+
 def test_get_price_history_rejects_unknown_symbol() -> None:
     def handler(_request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json=autocomplete_response([]))

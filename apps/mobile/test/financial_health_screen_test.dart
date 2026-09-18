@@ -16,6 +16,9 @@ void main() {
     final apiClient = ApiClient(
       client: MockClient((request) async {
         expect(request.url.path, '/api/v1/financial-health/analyze');
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        expect(body['monthly_income_krw'], 3000000);
+        expect(body['planned_investment_krw'], 10000000);
         return http.Response.bytes(
           utf8.encode(
             jsonEncode({
@@ -40,6 +43,11 @@ void main() {
         home: FinancialHealthScreen(apiClient: apiClient),
       ),
     );
+
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList(growable: false);
+    expect(fields.first.controller?.text, '3,000,000');
 
     final calculateButton = find.widgetWithText(FilledButton, '금융체력 계산하기');
     await tester.scrollUntilVisible(

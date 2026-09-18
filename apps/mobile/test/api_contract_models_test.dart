@@ -1,8 +1,37 @@
 import 'package:financial_shock_preview/features/financial_health/models/financial_health_models.dart';
+import 'package:financial_shock_preview/features/combined_report/models/combined_report_models.dart';
 import 'package:financial_shock_preview/features/stress_test/models/stress_test_models.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('ExplanationInput은 원본 재무정보 없이 계약 필드만 직렬화한다', () {
+    const input = ExplanationInput(
+      scenario_key: ScenarioKeys.historicalMdd,
+      assumed_return_rate: -0.3,
+      investment_loss_krw: 3000000,
+      loss_to_equity_ratio: 0.5,
+      loss_to_emergency_fund_ratio: 0.6,
+      loss_to_monthly_fixed_expenses: 2,
+      net_investment_equity_krw: 3000000,
+      estimated_monthly_interest_krw: 20000,
+      market_max_drawdown_rate: -0.3,
+      warnings: [],
+    );
+
+    expect(input.toJson().keys, {
+      'scenario_key',
+      'assumed_return_rate',
+      'investment_loss_krw',
+      'loss_to_equity_ratio',
+      'loss_to_emergency_fund_ratio',
+      'loss_to_monthly_fixed_expenses',
+      'net_investment_equity_krw',
+      'estimated_monthly_interest_krw',
+      'market_max_drawdown_rate',
+      'warnings',
+    });
+  });
+
   test('FinancialProfileInput은 API 계약 필드명을 그대로 직렬화한다', () {
     const profile = FinancialProfileInput(
       monthly_income_krw: 3000000,

@@ -149,7 +149,7 @@ class NaverStockPriceAdapter(StockPriceAdapter):
             if chartdata is None:
                 raise MarketDataUnavailableError()
 
-            points: list[PricePoint] = []
+            points_by_date: dict[date, PricePoint] = {}
             for item in chartdata.findall("item"):
                 data_attr = item.get("data")
                 if not data_attr:
@@ -172,14 +172,14 @@ class NaverStockPriceAdapter(StockPriceAdapter):
                     if not adjusted_close.is_finite() or adjusted_close < 0:
                         raise InvalidOperation
                     # This provider normalizes historical closes for stock splits.
-                    points.append(
-                        PricePoint(
-                            date=point_date,
-                            adjusted_close=adjusted_close,
-                        )
+                    points_by_date[point_date] = PricePoint(
+                        date=point_date,
+                        adjusted_close=adjusted_close,
                     )
         except (ET.ParseError, InvalidOperation, ValueError) as exc:
             raise MarketDataUnavailableError() from exc
 
-        points.sort(key=lambda point: point.date)
+        # A provider retry can occasionally repeat a trading date. One close per
+        # date prevents duplicate rows from distorting daily volatility.
+        points = sorted(points_by_date.values(), key=lambda point: point.date)
         return "naver_finance", instrument, points

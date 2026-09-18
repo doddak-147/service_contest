@@ -211,6 +211,27 @@ class MarketRiskCard extends StatelessWidget {
               const SizedBox(height: 16),
             ],
 
+            ExpansionTile(
+              tilePadding: EdgeInsets.zero,
+              childrenPadding: const EdgeInsets.only(bottom: 12),
+              title: const Text(
+                '데이터 기준과 한계',
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
+              ),
+              children: [
+                _DataLimitText(text: '데이터 제공자: ${result.data_source}'),
+                const _DataLimitText(
+                  text: '기간 수익률·변동성·MDD는 제공자가 조정한 일별 종가를 사용합니다.',
+                ),
+                const _DataLimitText(
+                  text: '액면분할·병합 등 기업행사 반영 기준과 과거 데이터 정정은 제공자 정책에 의존합니다.',
+                ),
+                const _DataLimitText(
+                  text: '배당을 포함한 총수익률이나 미래 손실 확률을 의미하지 않습니다.',
+                ),
+              ],
+            ),
+
             // Disclaimer Banner
             Container(
               padding: const EdgeInsets.all(12),
@@ -246,6 +267,26 @@ class MarketRiskCard extends StatelessWidget {
     if (rate > 0) return AppColors.success;
     if (rate < 0) return AppColors.danger;
     return AppColors.text;
+  }
+}
+
+class _DataLimitText extends StatelessWidget {
+  const _DataLimitText({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: 6),
+        child: Text(
+          '• $text',
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+        ),
+      ),
+    );
   }
 }
 

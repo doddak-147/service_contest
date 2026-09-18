@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../shared/api/api_client.dart';
+import '../../../shared/input/krw_input_formatter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../data/stress_test_api.dart';
 import '../models/stress_test_models.dart';
@@ -73,28 +74,28 @@ class _StressTestScreenState extends State<StressTestScreen> {
     _stressTestApi = StressTestApi(widget.apiClient);
     final profile = widget.initialProfile;
     _monthlyIncomeController = TextEditingController(
-      text: '${profile?.monthly_income_krw ?? 3000000}',
+      text: formatKrwInput('${profile?.monthly_income_krw ?? 3000000}'),
     );
     _monthlyFixedExpensesController = TextEditingController(
-      text: '${profile?.monthly_fixed_expenses_krw ?? 1800000}',
+      text: formatKrwInput('${profile?.monthly_fixed_expenses_krw ?? 1800000}'),
     );
     _emergencyFundController = TextEditingController(
-      text: '${profile?.emergency_fund_krw ?? 5000000}',
+      text: formatKrwInput('${profile?.emergency_fund_krw ?? 5000000}'),
     );
     _existingLoanBalanceController = TextEditingController(
-      text: '${profile?.existing_loan_balance_krw ?? 10000000}',
+      text: formatKrwInput('${profile?.existing_loan_balance_krw ?? 10000000}'),
     );
     _monthlyDebtPaymentController = TextEditingController(
-      text: '${profile?.monthly_debt_payment_krw ?? 400000}',
+      text: formatKrwInput('${profile?.monthly_debt_payment_krw ?? 400000}'),
     );
     _plannedInvestmentController = TextEditingController(
-      text: '${profile?.planned_investment_krw ?? 15000000}',
+      text: formatKrwInput('${profile?.planned_investment_krw ?? 15000000}'),
     );
     _equityAmountController = TextEditingController(
-      text: '${profile?.equity_amount_krw ?? 5000000}',
+      text: formatKrwInput('${profile?.equity_amount_krw ?? 5000000}'),
     );
     _borrowedAmountController = TextEditingController(
-      text: '${profile?.borrowed_amount_krw ?? 10000000}',
+      text: formatKrwInput('${profile?.borrowed_amount_krw ?? 10000000}'),
     );
     _annualLoanRateController = TextEditingController(
       text: _formatRateInput(profile?.annual_loan_rate ?? 0.06),
@@ -553,17 +554,19 @@ class _InputField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(
-            RegExp(allowDecimal ? r'[-0-9.]' : r'[-0-9,]'),
-          ),
-        ],
+        inputFormatters: allowDecimal
+            ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
+            : const [KrwInputFormatter()],
         keyboardType: TextInputType.numberWithOptions(
           decimal: allowDecimal,
           signed: true,
         ),
         onChanged: onChanged,
-        decoration: InputDecoration(helperText: hint, labelText: label),
+        decoration: InputDecoration(
+          helperText: hint,
+          labelText: label,
+          suffixText: allowDecimal ? '%' : '원',
+        ),
       ),
     );
   }

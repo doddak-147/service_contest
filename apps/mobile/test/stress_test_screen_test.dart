@@ -55,6 +55,10 @@ void main() {
       ),
     );
 
+    final fields = tester
+        .widgetList<TextField>(find.byType(TextField))
+        .toList(growable: false);
+    expect(fields.first.controller?.text, '3,000,000');
     expect(find.text('금융체력 분석에서 사용한 재무정보를 불러왔습니다.'), findsOneWidget);
     expect(find.textContaining('테스트 종목의 과거 MDD'), findsOneWidget);
 

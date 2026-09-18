@@ -17,6 +17,19 @@ void main() {
   testWidgets('재무정보와 종목을 전송하고 결합 Report를 표시한다', (tester) async {
     final apiClient = ApiClient(
       client: MockClient((request) async {
+        if (request.url.path == '/api/v1/explanations') {
+          final explanationInput =
+              jsonDecode(request.body) as Map<String, dynamic>;
+          expect(explanationInput['scenario_key'], ScenarioKeys.historicalMdd);
+          expect(explanationInput['investment_loss_krw'], 3000000);
+          expect(explanationInput.containsKey('financial_profile'), isFalse);
+          return _jsonResponse({
+            'source': 'llm',
+            'summary': '과거 하락을 적용한 예상 손실은 3,000,000원입니다.',
+            'caution': '가정 결과이며 투자 추천이나 미래 가격 예측이 아닙니다.',
+          });
+        }
+
         expect(request.url.path, '/api/v1/combined-analyses');
         final body = jsonDecode(request.body) as Map<String, dynamic>;
         final profile = body['financial_profile'] as Map<String, dynamic>;
@@ -27,11 +40,7 @@ void main() {
         expect(instrument['symbol'], '005930');
         expect(body['period_start'], '2025-01-02');
         expect(body['period_end'], '2025-12-30');
-        return http.Response.bytes(
-          utf8.encode(jsonEncode(_combinedResponse())),
-          200,
-          headers: {'content-type': 'application/json'},
-        );
+        return _jsonResponse(_combinedResponse());
       }),
     );
     addTearDown(apiClient.close);
@@ -56,24 +65,30 @@ void main() {
     expect(find.text('과거 MDD 적용 충격'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.text('정적 템플릿 설명'),
+      find.text('AI 쉬운 설명'),
       700,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.textContaining('예상 투자손실은 3,000,000원'), findsOneWidget);
-    expect(find.textContaining('AI를 사용하지 않은 검증 가능한 기본 설명'), findsOneWidget);
+    expect(find.textContaining('예상 손실은 3,000,000원'), findsOneWidget);
     expect(find.textContaining('투자 자문이 아닙니다'), findsOneWidget);
   });
 
   testWidgets('주가 장애 부분 응답에서도 금융체력과 고정 시나리오를 표시한다', (tester) async {
     final apiClient = ApiClient(
-      client: MockClient(
-        (_) async => http.Response.bytes(
-          utf8.encode(jsonEncode(_combinedResponse(marketUnavailable: true))),
-          200,
-          headers: {'content-type': 'application/json'},
-        ),
-      ),
+      client: MockClient((request) async {
+        if (request.url.path == '/api/v1/explanations') {
+          final explanationInput =
+              jsonDecode(request.body) as Map<String, dynamic>;
+          expect(explanationInput['scenario_key'], ScenarioKeys.down20);
+          expect(explanationInput['market_max_drawdown_rate'], isNull);
+          return _jsonResponse({
+            'source': 'template',
+            'summary': '하락 가정의 검증된 기본 설명입니다.',
+            'caution': '가정 결과이며 투자 추천이나 미래 가격 예측이 아닙니다.',
+          });
+        }
+        return _jsonResponse(_combinedResponse(marketUnavailable: true));
+      }),
     );
     addTearDown(apiClient.close);
 
@@ -95,8 +110,21 @@ void main() {
     expect(find.byType(MarketRiskCard), findsNothing);
     expect(find.byType(StressTestResultCard), findsNothing);
     expect(find.textContaining('주가 데이터 제공자와 통신하지 못해'), findsOneWidget);
-    expect(find.textContaining('고정 상승·보합·하락 시나리오'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.text('검증된 기본 설명'),
+      700,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('하락 가정의 검증된 기본 설명입니다.'), findsOneWidget);
   });
+}
+
+http.Response _jsonResponse(Object body, {int statusCode = 200}) {
+  return http.Response.bytes(
+    utf8.encode(jsonEncode(body)),
+    statusCode,
+    headers: {'content-type': 'application/json'},
+  );
 }
 
 const _profile = FinancialProfileInput(

@@ -8,9 +8,20 @@ import '../../../stress_test/presentation/widgets/stress_test_result_card.dart';
 import '../../models/combined_report_models.dart';
 
 class CombinedReportView extends StatelessWidget {
-  const CombinedReportView({required this.result, super.key});
+  const CombinedReportView({
+    required this.result,
+    required this.explanation,
+    required this.explanationError,
+    required this.isExplanationLoading,
+    required this.onRetryExplanation,
+    super.key,
+  });
 
   final CombinedAnalysisResult result;
+  final ExplanationResult? explanation;
+  final String? explanationError;
+  final bool isExplanationLoading;
+  final VoidCallback onRetryExplanation;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +69,12 @@ class CombinedReportView extends StatelessWidget {
         const SizedBox(height: 28),
         const _SectionTitle(number: '5', title: '쉬운 결과 설명'),
         const SizedBox(height: 12),
-        _TemplateExplanationCard(result: result),
+        _ExplanationCard(
+          explanation: explanation,
+          errorMessage: explanationError,
+          isLoading: isExplanationLoading,
+          onRetry: onRetryExplanation,
+        ),
         const SizedBox(height: 24),
         DecoratedBox(
           decoration: BoxDecoration(
@@ -168,22 +184,21 @@ class _UnavailableCard extends StatelessWidget {
   }
 }
 
-class _TemplateExplanationCard extends StatelessWidget {
-  const _TemplateExplanationCard({required this.result});
+class _ExplanationCard extends StatelessWidget {
+  const _ExplanationCard({
+    required this.explanation,
+    required this.errorMessage,
+    required this.isLoading,
+    required this.onRetry,
+  });
 
-  final CombinedAnalysisResult result;
+  final ExplanationResult? explanation;
+  final String? errorMessage;
+  final bool isLoading;
+  final VoidCallback onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final impact = result.mdd_impact;
-    final summary = impact == null
-        ? '종목의 과거 MDD를 계산하지 못해 결합 충격은 설명하지 않았습니다. '
-              '대신 서버가 계산한 고정 상승·보합·하락 시나리오를 비교해 보세요.'
-        : '선택 종목의 과거 최대낙폭이 다시 발생한다고 가정하면 예상 투자손실은 '
-              '${_formatKrw(impact.investment_loss_krw)}이고, 자기자본 대비 손실은 '
-              '${_formatPercent(impact.loss_to_equity_ratio)}입니다. 손실 후 남은 자기자본은 '
-              '${_formatKrw(impact.net_investment_equity_krw)}입니다.';
-
     return DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.primary.withValues(alpha: 0.08),
@@ -195,20 +210,44 @@ class _TemplateExplanationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
-              '정적 템플릿 설명',
-              style: TextStyle(
+            Text(
+              isLoading
+                  ? '결과 설명'
+                  : explanation?.source == 'llm'
+                  ? 'AI 쉬운 설명'
+                  : '검증된 기본 설명',
+              style: const TextStyle(
                 color: AppColors.primary,
                 fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
-            Text(summary, style: const TextStyle(height: 1.55)),
-            const SizedBox(height: 10),
-            const Text(
-              'AI를 사용하지 않은 검증 가능한 기본 설명이며, 투자 가능 여부나 매수·매도 판단을 제시하지 않습니다.',
-              style: TextStyle(color: AppColors.textMuted, fontSize: 13),
-            ),
+            if (isLoading)
+              const Row(
+                children: [
+                  SizedBox.square(
+                    dimension: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                  SizedBox(width: 10),
+                  Expanded(child: Text('계산 결과를 쉬운 말로 설명하고 있습니다...')),
+                ],
+              )
+            else if (explanation != null) ...[
+              Text(explanation!.summary, style: const TextStyle(height: 1.55)),
+              const SizedBox(height: 10),
+              Text(
+                explanation!.caution,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                ),
+              ),
+            ] else ...[
+              Text(errorMessage ?? '결과 설명을 불러오지 못했습니다.'),
+              const SizedBox(height: 8),
+              TextButton(onPressed: onRetry, child: const Text('설명 다시 요청')),
+            ],
           ],
         ),
       ),
@@ -242,26 +281,6 @@ class _SectionTitle extends StatelessWidget {
       ],
     );
   }
-}
-
-String _formatKrw(int value) {
-  final sign = value < 0 ? '-' : '';
-  final digits = value.abs().toString();
-  final buffer = StringBuffer();
-  for (var index = 0; index < digits.length; index++) {
-    if (index > 0 && (digits.length - index) % 3 == 0) {
-      buffer.write(',');
-    }
-    buffer.write(digits[index]);
-  }
-  return '$sign${buffer.toString()}원';
-}
-
-String _formatPercent(double? value) {
-  if (value == null) {
-    return '계산 불가';
-  }
-  return '${(value * 100).toStringAsFixed(1)}%';
 }
 
 String _warningMessage(String warning) {

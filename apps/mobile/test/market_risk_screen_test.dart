@@ -282,6 +282,17 @@ void main() {
     expect(find.text('미회복 (기간 내 최고점 미달)'), findsOneWidget);
     expect(find.text('주의: 관측치가 부족해 일부 지표를 계산하지 못했습니다.'), findsOneWidget);
     expect(find.textContaining('과거 데이터는 미래 결과를 보장하지 않습니다'), findsOneWidget);
+
+    await tester.scrollUntilVisible(
+      find.text('데이터 기준과 한계'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('데이터 기준과 한계'));
+    await tester.pumpAndSettle();
+    expect(find.text('• 데이터 제공자: fake_provider'), findsOneWidget);
+    expect(find.textContaining('기업행사 반영 기준'), findsOneWidget);
+    expect(find.textContaining('미래 손실 확률을 의미하지 않습니다'), findsOneWidget);
   });
 
   testWidgets('조회 실패 시 이전 종목 결과를 다시 표시하지 않는다', (tester) async {

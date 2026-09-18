@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../../shared/api/api_client.dart';
+import '../../../shared/input/krw_input_formatter.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../stress_test/models/stress_test_models.dart';
@@ -21,18 +22,20 @@ class FinancialHealthScreen extends StatefulWidget {
 
 class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   // API_CONTRACT.md의 예시값을 기본값으로 두면 팀원이 앱을 켠 즉시 검산할 수 있다.
-  final _monthlyIncomeController = TextEditingController(text: '3000000');
+  final _monthlyIncomeController = TextEditingController(text: '3,000,000');
   final _monthlyFixedExpensesController = TextEditingController(
-    text: '1500000',
+    text: '1,500,000',
   );
-  final _emergencyFundController = TextEditingController(text: '5000000');
+  final _emergencyFundController = TextEditingController(text: '5,000,000');
   final _existingLoanBalanceController = TextEditingController(
-    text: '10000000',
+    text: '10,000,000',
   );
-  final _monthlyDebtPaymentController = TextEditingController(text: '400000');
-  final _plannedInvestmentController = TextEditingController(text: '10000000');
-  final _equityAmountController = TextEditingController(text: '6000000');
-  final _borrowedAmountController = TextEditingController(text: '4000000');
+  final _monthlyDebtPaymentController = TextEditingController(text: '400,000');
+  final _plannedInvestmentController = TextEditingController(
+    text: '10,000,000',
+  );
+  final _equityAmountController = TextEditingController(text: '6,000,000');
+  final _borrowedAmountController = TextEditingController(text: '4,000,000');
   final _annualLoanRateController = TextEditingController(text: '6');
 
   late final FinancialHealthApi _financialHealthApi;
@@ -436,17 +439,19 @@ class _InputField extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 16),
       child: TextField(
         controller: controller,
-        inputFormatters: [
-          FilteringTextInputFormatter.allow(
-            RegExp(allowDecimal ? r'[-0-9.]' : r'[-0-9,]'),
-          ),
-        ],
+        inputFormatters: allowDecimal
+            ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
+            : const [KrwInputFormatter()],
         keyboardType: TextInputType.numberWithOptions(
           decimal: allowDecimal,
           signed: true,
         ),
         onChanged: onChanged,
-        decoration: InputDecoration(helperText: hint, labelText: label),
+        decoration: InputDecoration(
+          helperText: hint,
+          labelText: label,
+          suffixText: allowDecimal ? '%' : '원',
+        ),
       ),
     );
   }

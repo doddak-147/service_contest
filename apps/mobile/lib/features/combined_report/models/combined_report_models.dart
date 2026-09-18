@@ -83,6 +83,71 @@ class CombinedAnalysisResult {
   }
 }
 
+class ExplanationInput {
+  const ExplanationInput({
+    required this.scenario_key,
+    required this.assumed_return_rate,
+    required this.investment_loss_krw,
+    required this.loss_to_equity_ratio,
+    required this.loss_to_emergency_fund_ratio,
+    required this.loss_to_monthly_fixed_expenses,
+    required this.net_investment_equity_krw,
+    required this.estimated_monthly_interest_krw,
+    required this.market_max_drawdown_rate,
+    required this.warnings,
+  });
+
+  final String scenario_key;
+  final double assumed_return_rate;
+  final int investment_loss_krw;
+  final double? loss_to_equity_ratio;
+  final double? loss_to_emergency_fund_ratio;
+  final double? loss_to_monthly_fixed_expenses;
+  final int net_investment_equity_krw;
+  final int estimated_monthly_interest_krw;
+  final double? market_max_drawdown_rate;
+  final List<String> warnings;
+
+  Map<String, dynamic> toJson() {
+    return {
+      'scenario_key': scenario_key,
+      'assumed_return_rate': assumed_return_rate,
+      'investment_loss_krw': investment_loss_krw,
+      'loss_to_equity_ratio': loss_to_equity_ratio,
+      'loss_to_emergency_fund_ratio': loss_to_emergency_fund_ratio,
+      'loss_to_monthly_fixed_expenses': loss_to_monthly_fixed_expenses,
+      'net_investment_equity_krw': net_investment_equity_krw,
+      'estimated_monthly_interest_krw': estimated_monthly_interest_krw,
+      'market_max_drawdown_rate': market_max_drawdown_rate,
+      'warnings': warnings,
+    };
+  }
+}
+
+class ExplanationResult {
+  const ExplanationResult({
+    required this.source,
+    required this.summary,
+    required this.caution,
+  });
+
+  final String source;
+  final String summary;
+  final String caution;
+
+  factory ExplanationResult.fromJson(Map<String, dynamic> json) {
+    final source = _readString(json, 'source');
+    if (source != 'llm' && source != 'template') {
+      throw const FormatException('지원하지 않는 explanation source입니다.');
+    }
+    return ExplanationResult(
+      source: source,
+      summary: _readString(json, 'summary'),
+      caution: _readString(json, 'caution'),
+    );
+  }
+}
+
 Map<String, dynamic> _readMap(Map<String, dynamic> json, String key) {
   final value = json[key];
   if (value is Map<String, dynamic>) {

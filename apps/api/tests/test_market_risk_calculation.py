@@ -173,3 +173,27 @@ def test_market_risk_calculation_total_loss() -> None:
     assert calc.peak_date == date(2024, 1, 1)
     assert calc.trough_date == date(2024, 1, 3)
     assert calc.recovery_date is None
+
+
+def test_split_adjusted_fixture_does_not_create_false_drawdown() -> None:
+    """Samsung's 2018 50:1 split window stays on one adjusted price basis."""
+    points = [
+        PricePoint(date=date(2018, 4, 30), adjusted_close=Decimal("53000")),
+        PricePoint(date=date(2018, 5, 2), adjusted_close=Decimal("53000")),
+        PricePoint(date=date(2018, 5, 4), adjusted_close=Decimal("51900")),
+        PricePoint(date=date(2018, 5, 8), adjusted_close=Decimal("52600")),
+    ]
+
+    calc = calculate_market_risk(
+        instrument=make_instrument(),
+        price_points=points,
+        requested_start_date=date(2018, 4, 30),
+        requested_end_date=date(2018, 5, 8),
+        data_source="split_adjusted_fixture",
+    )
+
+    assert calc.observation_count == 4
+    assert calc.period_return_rate == Decimal("-0.007547")
+    assert calc.max_drawdown_rate == Decimal("-0.020755")
+    assert calc.peak_date == date(2018, 4, 30)
+    assert calc.trough_date == date(2018, 5, 4)
