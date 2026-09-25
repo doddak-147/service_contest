@@ -402,44 +402,56 @@ class _MddHighlightTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    Icons.trending_down_rounded,
+              const Icon(
+                Icons.trending_down_rounded,
+                color: AppColors.danger,
+                size: 20,
+              ),
+              const SizedBox(width: 6),
+              const Expanded(
+                flex: 3,
+                child: Text(
+                  '최대낙폭 (MDD)',
+                  maxLines: 2,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
                     color: AppColors.danger,
-                    size: 20,
                   ),
-                  SizedBox(width: 6),
-                  Text(
-                    '최대낙폭 (MDD)',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.danger,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Flexible(
+                flex: 2,
+                child: Align(
+                  alignment: Alignment.centerRight,
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.centerRight,
+                    child: Text(
+                      formatted,
+                      maxLines: 1,
+                      style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w900,
+                        color: AppColors.danger,
+                      ),
                     ),
                   ),
-                ],
-              ),
-              SizedBox(height: 2),
-              Text(
-                '조회 기간 중 누적 최고점 대비 최악의 하락률',
-                style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+                ),
               ),
             ],
           ),
-          Text(
-            formatted,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w900,
-              color: AppColors.danger,
-            ),
+          const SizedBox(height: 6),
+          const Text(
+            '조회 기간 중 누적 최고점 대비 최악의 하락률',
+            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ],
       ),

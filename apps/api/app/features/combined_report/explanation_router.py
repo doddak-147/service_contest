@@ -1,3 +1,4 @@
+import logging
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, Request
@@ -17,6 +18,7 @@ from app.integrations.llm.openai_compatible import (
 )
 
 router = APIRouter(prefix="/api/v1/explanations", tags=["combined-report"])
+logger = logging.getLogger(__name__)
 
 
 def get_explanation_adapter(request: Request) -> ExplanationAdapter | None:
@@ -35,9 +37,7 @@ def get_explanation_adapter(request: Request) -> ExplanationAdapter | None:
 @router.post("", response_model=ExplanationResult)
 async def create_explanation(
     payload: ExplanationInput,
-    adapter: Annotated[
-        ExplanationAdapter | None, Depends(get_explanation_adapter)
-    ],
+    adapter: Annotated[ExplanationAdapter | None, Depends(get_explanation_adapter)],
 ) -> ExplanationResult:
     if adapter is None:
         return build_template_explanation(payload)
@@ -45,5 +45,8 @@ async def create_explanation(
     try:
         draft = await adapter.generate(payload.model_dump())
         return build_llm_explanation(payload, draft)
-    except (LlmUnavailableError, UnsafeExplanationError):
+    except LlmUnavailableError:
+        return build_template_explanation(payload)
+    except UnsafeExplanationError as exc:
+        logger.warning("LLM explanation rejected by safety validation: %s", exc)
         return build_template_explanation(payload)

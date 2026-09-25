@@ -295,6 +295,51 @@ void main() {
     expect(find.textContaining('미래 손실 확률을 의미하지 않습니다'), findsOneWidget);
   });
 
+  testWidgets('좁은 휴대폰과 확대 글자에서도 MDD 값이 넘치지 않는다', (tester) async {
+    tester.view.physicalSize = const Size(360, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    const result = MarketRiskResult(
+      instrument: Instrument(
+        symbol: '005930',
+        market: 'KRX',
+        name: '삼성전자',
+        currency: 'KRW',
+      ),
+      period_start: '2023-09-27',
+      period_end: '2026-09-23',
+      data_as_of: '2026-09-23',
+      data_source: 'naver_finance',
+      observation_count: 726,
+      period_return_rate: 3.1886,
+      annualized_volatility: 0.5065,
+      max_drawdown_rate: -0.4317,
+      peak_date: '2024-07-09',
+      trough_date: '2024-11-14',
+      recovery_date: '2025-10-02',
+      warnings: <String>[],
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(1.2)),
+          child: Scaffold(
+            body: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(horizontal: 20),
+              child: MarketRiskCard(result: result),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('-43.17%'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('조회 실패 시 이전 종목 결과를 다시 표시하지 않는다', (tester) async {
     final samsungResult = {
       'instrument': {
