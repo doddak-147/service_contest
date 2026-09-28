@@ -9,7 +9,7 @@
 ```text
 apps/mobile/  Flutter + Dart Android 앱
 apps/api/     FastAPI + Python 계산 API
-docs/         제품 명세, API 계약, 아키텍처, 로드맵
+docs/         제품 명세, API 계약, 아키텍처, 배포·공모전 자료
 ```
 
 ## 사전 준비
