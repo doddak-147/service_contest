@@ -64,6 +64,29 @@ flutter run --dart-define=API_BASE_URL=http://192.168.0.10:8000
 
 `API_BASE_URL`은 공개 서버 주소 전용이며 API 키나 비밀번호를 넣지 않습니다. 배포 빌드는 HTTPS 주소를 사용합니다.
 
+## 클라우드 배포
+
+운영 API는 Naver Cloud Platform의 단일 Ubuntu 서버에서 systemd와 Nginx로 실행합니다.
+
+- API URL: `https://service-contest-2026-api.duckdns.org`
+- 상태 확인: `https://service-contest-2026-api.duckdns.org/health`
+- 모바일에는 공개 API URL만 포함하고 주가·LLM API 키는 서버의 `/etc/service-contest.env`에서 관리합니다.
+
+실기기에서 클라우드 API를 사용하려면 다음과 같이 실행합니다.
+
+```powershell
+cd apps/mobile
+flutter run -d <DEVICE_ID> --dart-define=API_BASE_URL=https://service-contest-2026-api.duckdns.org
+```
+
+공모전 시연용 APK는 다음 명령으로 만듭니다.
+
+```powershell
+flutter build apk --release --dart-define=API_BASE_URL=https://service-contest-2026-api.duckdns.org
+```
+
+생성 파일은 `apps/mobile/build/app/outputs/flutter-apk/app-release.apk`입니다. 현재 release 빌드는 내부 시연용 debug 인증서를 사용하므로 Play Store 공개 전에는 별도의 배포용 서명 설정이 필요합니다. 서버 갱신과 장애 확인 절차는 [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)를 따릅니다.
+
 ## 기능 확인
 
 앱 시작 화면이 `GET /health`를 호출해 서버 연결 상태를 표시합니다. 개인 금융체력 화면에서는 월 잉여현금, 비상자금 버팀 기간과 차입 비율을 확인할 수 있습니다. Stress Test에서는 `+20%`, 보합, `-10%`부터 `-50%`, 선택 종목의 과거 MDD 시나리오를 비교하고 비상자금·자기자본·생활비 대비 손실과 회복 필요 상승률을 확인할 수 있습니다. 종목 과거 위험 화면에서는 국내 종목의 기간 수익률, 변동성, MDD와 회복 여부를 확인할 수 있습니다. 결합 Report는 동일한 재무정보와 종목 MDD를 연결하고, 주가 API 장애 시에도 금융체력과 고정 시나리오를 부분 결과로 제공합니다.

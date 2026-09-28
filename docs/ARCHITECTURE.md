@@ -6,7 +6,7 @@
 - **API·계산:** FastAPI + Python
 - **외부 연동:** 주가 데이터 API, 제한적 LLM API
 - **테스트·정적 검사:** pytest, Ruff, Flutter test, Flutter analyze
-- **배포:** Naver Cloud, KT Cloud, NHN Cloud 중 공모전 제공 조건에 맞는 한 곳
+- **배포:** Naver Cloud Platform 단일 Ubuntu VM, systemd, Nginx, Let's Encrypt HTTPS
 
 MVP에는 Supabase, PostgreSQL, 회원가입·로그인, 서버 분석 이력, `packages/contracts` 별도 패키지를 사용하지 않는다. 필요한 데이터는 한 요청 안에서 처리하고 사용자 재무 원본은 응답 후 폐기한다. 외부 API 응답은 제공자 약관이 허용할 때만 프로세스 메모리에 짧게 캐시한다.
 
@@ -77,11 +77,14 @@ LLM 출력은 문자열 설명이며 권위 있는 데이터 모델에 다시 �
 
 ## 6. 배포와 보안
 
-- FastAPI는 공모전에서 제공하는 Naver Cloud, KT Cloud, NHN Cloud 중 하나의 단일 애플리케이션으로 배포한다.
-- 제공 조건, 팀 경험, 배포 난이도를 비교해 한 사업자를 선택하고 선택 근거를 기록한다.
+- FastAPI는 Naver Cloud Platform의 단일 Ubuntu VM에 배포한다. 공모전 지원 플랫폼을 직접 활용하면서 네 명이 운영하기 쉬운 최소 구성을 유지하기 위한 선택이다.
+- systemd가 Uvicorn을 `127.0.0.1:8000`에서 실행하고 Nginx가 공개 HTTPS 요청을 역방향 프록시한다.
+- 공개 주소는 `https://service-contest-2026-api.duckdns.org`이며 Let's Encrypt 인증서는 Certbot으로 자동 갱신한다.
 - 주가·LLM API 키는 클라우드 secret 또는 서버 환경변수로만 주입한다. 모바일 앱에는 공개 API URL만 둔다.
 - HTTPS, 입력 크기 제한, 외부 API timeout과 제한된 retry만 우선 적용한다.
 - 요청 로그에는 요청 ID, 처리시간, 상태 코드, 데이터 기준일만 남기고 재무값과 LLM payload를 제외한다.
+
+운영 파일 경로와 배포 확인 절차는 [DEPLOYMENT.md](./DEPLOYMENT.md)를 단일 기준으로 사용한다.
 
 ## 7. MVP 이후 확장
 
