@@ -4,9 +4,9 @@
 
 - **모바일:** Flutter + Dart(Android)
 - **API·계산:** FastAPI + Python
-- **외부 연동:** 주가 데이터 API, 제한적 LLM API
+- **외부 연동:** Naver Finance 주가 어댑터, OpenAI-compatible LLM API
 - **테스트·정적 검사:** pytest, Ruff, Flutter test, Flutter analyze
-- **배포:** Naver Cloud, KT Cloud, NHN Cloud 중 공모전 제공 조건에 맞는 한 곳
+- **배포:** Naver Cloud Server(Ubuntu 24.04), Nginx, Uvicorn, HTTPS
 
 MVP에는 Supabase, PostgreSQL, 회원가입·로그인, 서버 분석 이력, `packages/contracts` 별도 패키지를 사용하지 않는다. 필요한 데이터는 한 요청 안에서 처리하고 사용자 재무 원본은 응답 후 폐기한다. 외부 API 응답은 제공자 약관이 허용할 때만 프로세스 메모리에 짧게 캐시한다.
 
@@ -16,9 +16,13 @@ MVP에는 Supabase, PostgreSQL, 회원가입·로그인, 서버 분석 이력, `
 Flutter Mobile
   ├─ 재무 입력 및 시나리오 화면
   ├─ 과거 위험 및 결합 Report
-  └─ HTTPS/JSON
+  └─ HTTPS/JSON (`API_BASE_URL`)
           ↓
-Single FastAPI Service
+DuckDNS Domain + TLS
+          ↓
+Nginx Reverse Proxy (80/443)
+          ↓
+Single FastAPI Service (Uvicorn/systemd)
   ├─ financial-health   결정론적 재무 계산
   ├─ market-risk       주가 조회 및 MDD/변동성 계산
   ├─ stress-test       고정 가격 충격 및 회복률 계산
@@ -28,7 +32,7 @@ Single FastAPI Service
        └─ LLM Explanation Adapter
 ```
 
-FastAPI 한 개만 배포하며 마이크로서비스, 메시지 큐, Kubernetes, 영속 데이터베이스를 두지 않는다. 클라우드가 바뀌어도 환경변수와 실행 명령만 바뀌도록 표준 ASGI 애플리케이션으로 유지한다.
+FastAPI 한 개만 배포하며 마이크로서비스, 메시지 큐, Kubernetes, 영속 데이터베이스를 두지 않는다. Nginx가 HTTPS를 종료하고 localhost의 Uvicorn으로 전달한다. 클라우드가 바뀌어도 환경변수와 실행 명령만 바뀌도록 표준 ASGI 애플리케이션으로 유지한다.
 
 ## 3. Vertical Slice 저장소 구조
 
@@ -77,11 +81,14 @@ LLM 출력은 문자열 설명이며 권위 있는 데이터 모델에 다시 �
 
 ## 6. 배포와 보안
 
-- FastAPI는 공모전에서 제공하는 Naver Cloud, KT Cloud, NHN Cloud 중 하나의 단일 애플리케이션으로 배포한다.
-- 제공 조건, 팀 경험, 배포 난이도를 비교해 한 사업자를 선택하고 선택 근거를 기록한다.
-- 주가·LLM API 키는 클라우드 secret 또는 서버 환경변수로만 주입한다. 모바일 앱에는 공개 API URL만 둔다.
-- HTTPS, 입력 크기 제한, 외부 API timeout과 제한된 retry만 우선 적용한다.
-- 요청 로그에는 요청 ID, 처리시간, 상태 코드, 데이터 기준일만 남기고 재무값과 LLM payload를 제외한다.
+- 운영 주소는 `https://service-contest-2026-api.duckdns.org`이며 `/health` 응답으로 상태를 확인한다.
+- Naver Cloud의 VPC·Public Subnet 안에 Ubuntu 24.04 Micro 서버 1대를 두고 10GB 기본 스토리지를 사용한다.
+- Nginx가 80/443 요청을 FastAPI의 localhost 포트로 전달하며 TLS 인증서를 적용한다. SSH는 관리자의 고정 IP로만 제한한다.
+- Uvicorn은 systemd 서비스로 관리하고 환경변수는 권한을 제한한 `/etc/service-contest.env`에서 주입한다.
+- 주가·LLM API key는 서버 환경변수에만 두며 모바일에는 공개 `API_BASE_URL`만 전달한다. Native Flutter 요청에는 브라우저 CORS가 필요하지 않아 운영 기본 허용 origin은 비워 둔다.
+- 외부 API에는 timeout을 적용한다. 요청 로그에는 재무 원본과 LLM payload를 남기지 않고 오류 로그에서도 secret을 마스킹한다.
+
+현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다.
 
 ## 7. MVP 이후 확장
 

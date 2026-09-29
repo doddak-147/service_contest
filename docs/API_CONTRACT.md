@@ -14,6 +14,8 @@
 - 변경 절차: 문서 → FastAPI schema → 모바일 타입 → unit/contract test를 한 PR에서 변경
 - 반올림: 금액은 응답 직전 원 단위 `ROUND_HALF_UP`, 비율은 소수점 6자리 `ROUND_HALF_UP`; UI 표시용 반올림은 계산값을 변경하지 않음
 
+현재 공모전 시연용 운영 Base URL은 `https://service-contest-2026-api.duckdns.org`이다. 로컬 주소와 운영 주소는 환경에 따라 달라지지만 아래 path와 JSON 계약은 동일하다. `/health`는 인프라 상태 확인용이므로 `/api/v1` 밖에 둔다.
+
 ## 2. 공통 타입
 
 아래 표기가 권위 있는 wire type이다. `date`와 `datetime`은 위 형식의 JSON 문자열이다.
@@ -211,6 +213,16 @@ ExplanationResult {
 `scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd`다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
 
 ## 3. 엔드포인트
+
+### `GET /health`
+
+요청 본문 없이 서버 연결 상태를 반환한다.
+
+```json
+{
+  "status": "ok"
+}
+```
 
 ### `POST /api/v1/financial-health/analyze`
 
