@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+import re
 import xml.etree.ElementTree as ET
 from datetime import date
 from decimal import Decimal, InvalidOperation
 from typing import Any
+from urllib.parse import quote
 
 import httpx
 
@@ -14,16 +16,25 @@ from app.integrations.stock_api.base import (
     PricePoint,
     StockPriceAdapter,
 )
+from app.integrations.stock_api.ecb_fx import EcbFxAdapter
 
 SEARCH_URL = "https://ac.stock.naver.com/ac"
 PRICE_URL = "https://fchart.stock.naver.com/sise.nhn"
 SUPPORTED_MARKET = "KRX"
 SUPPORTED_TYPE_CODES = frozenset({"KOSPI", "KOSDAQ", "KONEX"})
+US_TYPE_CODES = frozenset({"NASDAQ", "NYSE", "AMEX"})
+REUTERS_CODE = re.compile(r"^[A-Za-z0-9._-]{1,32}$")
+US_CHART_URL = "https://api.stock.naver.com/chart/foreign/item/"
 
 
 class NaverStockPriceAdapter(StockPriceAdapter):
-    def __init__(self, client: httpx.AsyncClient | None = None) -> None:
+    def __init__(
+        self,
+        client: httpx.AsyncClient | None = None,
+        fx_adapter: EcbFxAdapter | None = None,
+    ) -> None:
         self._client = client
+        self._fx_adapter = fx_adapter or EcbFxAdapter(client)
 
     async def _get(
         self,
@@ -49,6 +60,9 @@ class NaverStockPriceAdapter(StockPriceAdapter):
         return response
 
     async def search_instruments(self, query: str) -> list[Instrument]:
+        return [instrument for instrument, _ in await self._search_items(query)]
+
+    async def _search_items(self, query: str) -> list[tuple[Instrument, str]]:
         normalized = query.strip()
         if not normalized:
             return []
@@ -68,48 +82,72 @@ class NaverStockPriceAdapter(StockPriceAdapter):
         if not isinstance(raw_items, list):
             raise MarketDataUnavailableError()
 
-        instruments: list[Instrument] = []
+        instruments: list[tuple[Instrument, str]] = []
         seen: set[tuple[str, str]] = set()
         for item in raw_items:
             if not isinstance(item, dict):
                 continue
-            if item.get("category") != "stock" or item.get("nationCode") != "KOR":
+            if item.get("category") != "stock":
                 continue
-            if item.get("typeCode") not in SUPPORTED_TYPE_CODES:
+            nation = item.get("nationCode")
+            type_code = item.get("typeCode")
+            if nation == "KOR" and type_code in SUPPORTED_TYPE_CODES:
+                market, currency = SUPPORTED_MARKET, "KRW"
+            elif nation == "USA" and type_code in US_TYPE_CODES:
+                market, currency = type_code, "USD"
+            else:
                 continue
 
             symbol = item.get("code")
             name = item.get("name")
+            reuters_code = item.get("reutersCode")
             if (
                 not isinstance(symbol, str)
-                or len(symbol) != 6
-                or not symbol.isdigit()
                 or not isinstance(name, str)
                 or not name.strip()
             ):
                 continue
+            if market == SUPPORTED_MARKET:
+                if len(symbol) != 6 or not symbol.isdigit():
+                    continue
+                reuters_code = symbol
+            elif (
+                not re.fullmatch(r"[A-Za-z0-9.-]{1,20}", symbol)
+                or not isinstance(reuters_code, str)
+                or not REUTERS_CODE.fullmatch(reuters_code)
+            ):
+                continue
 
-            key = (SUPPORTED_MARKET, symbol)
+            key = (market, symbol)
             if key in seen:
                 continue
             seen.add(key)
             instruments.append(
-                Instrument(
+                (Instrument(
                     symbol=symbol,
-                    market=SUPPORTED_MARKET,
+                    market=market,
                     name=name.strip(),
-                    currency="KRW",
-                )
+                    currency=currency,
+                ), reuters_code)
             )
 
         return instruments
 
-    async def _resolve_instrument(self, market: str, symbol: str) -> Instrument:
-        if market.upper() != SUPPORTED_MARKET:
+    async def _resolve_instrument(
+        self, market: str, symbol: str
+    ) -> tuple[Instrument, str]:
+        if market.upper() not in {SUPPORTED_MARKET, *US_TYPE_CODES}:
             raise InstrumentNotFoundError(market, symbol)
 
-        matches = await self.search_instruments(symbol)
-        matched = next((item for item in matches if item.symbol == symbol), None)
+        matches = await self._search_items(symbol)
+        matched = next(
+            (
+                item for item in matches
+                if item[0].symbol.upper() == symbol.upper()
+                and item[0].market == market.upper()
+            ),
+            None,
+        )
         if matched is None:
             raise InstrumentNotFoundError(market, symbol)
         return matched
@@ -121,7 +159,11 @@ class NaverStockPriceAdapter(StockPriceAdapter):
         start_date: date,
         end_date: date,
     ) -> tuple[str, Instrument, list[PricePoint]]:
-        instrument = await self._resolve_instrument(market, symbol)
+        instrument, reuters_code = await self._resolve_instrument(market, symbol)
+        if instrument.currency == "USD":
+            return await self._get_us_price_history(
+                instrument, reuters_code, start_date, end_date
+            )
 
         today = date.today()
         days_span = max((today - start_date).days + 60, 30)
@@ -183,3 +225,53 @@ class NaverStockPriceAdapter(StockPriceAdapter):
         # date prevents duplicate rows from distorting daily volatility.
         points = sorted(points_by_date.values(), key=lambda point: point.date)
         return "naver_finance", instrument, points
+
+    async def _get_us_price_history(
+        self,
+        instrument: Instrument,
+        reuters_code: str,
+        start_date: date,
+        end_date: date,
+    ) -> tuple[str, Instrument, list[PricePoint]]:
+        response = await self._get(
+            US_CHART_URL + quote(reuters_code, safe=""),
+            params={"periodType": "dayCandle"},
+        )
+        try:
+            payload: Any = response.json()
+            raw_prices = payload["priceInfos"]
+            if not isinstance(raw_prices, list):
+                raise ValueError("Invalid US chart")
+            usd_prices: dict[date, Decimal] = {}
+            for row in raw_prices:
+                day = date.fromisoformat(
+                    f"{row['localDate'][:4]}-{row['localDate'][4:6]}-"
+                    f"{row['localDate'][6:8]}"
+                )
+                close = Decimal(str(row["closePrice"]))
+                if not close.is_finite() or close <= 0:
+                    raise ValueError("Invalid US close")
+                if start_date <= day <= end_date:
+                    usd_prices[day] = close
+        except (KeyError, ValueError, TypeError, InvalidOperation, IndexError) as exc:
+            raise MarketDataUnavailableError() from exc
+
+        if not usd_prices:
+            return "naver_finance+ecb_reference_fx", instrument, []
+        fx_rates = await self._fx_adapter.get_usd_krw(
+            min(usd_prices), max(usd_prices)
+        )
+        ordered_fx = sorted(fx_rates)
+        points: list[PricePoint] = []
+        for day, usd_close in sorted(usd_prices.items()):
+            fx_day = next((fx for fx in reversed(ordered_fx) if fx <= day), None)
+            if fx_day is None or (day - fx_day).days > 5:
+                continue
+            points.append(
+                PricePoint(
+                    date=day,
+                    adjusted_close=usd_close * fx_rates[fx_day],
+                    fx_date=fx_day,
+                )
+            )
+        return "naver_finance+ecb_reference_fx", instrument, points

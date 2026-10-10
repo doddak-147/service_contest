@@ -18,13 +18,19 @@ router = APIRouter(prefix="/api/v1", tags=["market-risk"])
 
 
 def get_stock_adapter(request: Request) -> StockPriceAdapter:
+    cached = getattr(request.app.state, "stock_adapter", None)
+    if cached is not None:
+        return cached
     settings = getattr(request.app.state, "settings", None)
     provider = getattr(settings, "stock_data_provider", "fake") if settings else "fake"
     if provider == "naver":
-        return NaverStockPriceAdapter()
-    if provider == "fake":
-        return FakeStockPriceAdapter()
-    raise RuntimeError("Unsupported stock data provider configuration")
+        adapter: StockPriceAdapter = NaverStockPriceAdapter()
+    elif provider == "fake":
+        adapter = FakeStockPriceAdapter()
+    else:
+        raise RuntimeError("Unsupported stock data provider configuration")
+    request.app.state.stock_adapter = adapter
+    return adapter
 
 
 @router.get(

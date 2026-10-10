@@ -13,6 +13,45 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  testWidgets('미국 종목은 환율 충격을 선택해 API로 전달한다', (tester) async {
+    double? requestedFxRate;
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        requestedFxRate = body['exchange_rate_change_rate'] as double;
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(_scenarioResponse())),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(apiClient: apiClient, instrumentCurrency: 'USD'),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('원/달러 환율 변동 가정'),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.byType(ChoiceChip).last);
+    await tester.pumpAndSettle();
+    final button = find.widgetWithText(FilledButton, '금융 충격 계산하기');
+    await tester.scrollUntilVisible(
+      button,
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(requestedFxRate, 0.1);
+  });
+
   testWidgets('전체 재무정보와 MDD를 보내고 8개 시나리오를 비교한다', (tester) async {
     const profile = FinancialProfileInput(
       monthly_income_krw: 3000000,

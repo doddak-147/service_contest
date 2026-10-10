@@ -1,4 +1,5 @@
 from datetime import date
+from decimal import Decimal
 from typing import Any
 
 from fastapi.testclient import TestClient
@@ -66,6 +67,44 @@ def test_combined_report_uses_same_market_mdd_for_impact_and_scenarios() -> None
     assert body["scenarios"][-1] == body["mdd_impact"]
     assert len(body["scenarios"]) == 8
     assert "투자 자문이 아닙니다" in body["disclaimer"]
+
+
+class UsKrwStockAdapter(StockPriceAdapter):
+    async def search_instruments(self, query: str) -> list[Instrument]:
+        return [Instrument("AAPL", "NASDAQ", "애플", "USD")]
+
+    async def get_price_history(
+        self, market: str, symbol: str, start_date: date, end_date: date
+    ) -> tuple[str, Instrument, list[PricePoint]]:
+        return (
+            "naver_finance+ecb_reference_fx",
+            Instrument("AAPL", "NASDAQ", "애플", "USD"),
+            [
+                PricePoint(date(2025, 1, 2), Decimal("150000"), date(2025, 1, 2)),
+                PricePoint(date(2025, 1, 3), Decimal("120000"), date(2025, 1, 3)),
+                PricePoint(date(2025, 1, 6), Decimal("130000"), date(2025, 1, 6)),
+            ],
+        )
+
+
+def test_us_combined_report_uses_krw_mdd_once_and_keeps_fx_metadata() -> None:
+    request = valid_request("AAPL", "애플")
+    request["instrument"]["market"] = "NASDAQ"
+    request["instrument"]["currency"] = "USD"
+    request["period_start"] = "2025-01-01"
+    request["period_end"] = "2025-01-31"
+
+    with make_client(UsKrwStockAdapter()) as client:
+        response = client.post("/api/v1/combined-analyses", json=request)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["market_risk"]["max_drawdown_rate"] == -0.2
+    assert body["market_risk"]["fx_rate_as_of"] == "2025-01-06"
+    assert body["mdd_impact"]["investment_loss_krw"] == 2_000_000
+    assert body["mdd_impact"]["exchange_rate_change_rate"] is None
+    assert body["scenarios"][3]["exchange_rate_change_rate"] == 0
+    assert "FX_REFERENCE_RATE" in body["warnings"]
 
 
 class UnavailableStockPriceAdapter(StockPriceAdapter):

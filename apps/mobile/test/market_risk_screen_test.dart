@@ -26,6 +26,78 @@ const _financialProfile = FinancialProfileInput(
 );
 
 void main() {
+  testWidgets('미국 종목은 3개월만 조회하고 USD Stress Test로 연결한다', (tester) async {
+    const instrument = Instrument(
+      symbol: 'AAPL',
+      market: 'NASDAQ',
+      name: '애플',
+      currency: 'USD',
+    );
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/market-risk/NASDAQ/AAPL');
+        final requestedStart = DateTime.parse(
+          request.url.queryParameters['start_date']!,
+        );
+        final requestedEnd = DateTime.parse(
+          request.url.queryParameters['end_date']!,
+        );
+        expect(requestedEnd.difference(requestedStart).inDays, 90);
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'instrument': instrument.toJson(),
+              'period_start': '2026-07-10',
+              'period_end': '2026-10-09',
+              'data_as_of': '2026-10-09',
+              'fx_rate_as_of': '2026-10-09',
+              'data_source': 'naver_finance+ecb_reference_fx',
+              'observation_count': 65,
+              'period_return_rate': -0.1,
+              'annualized_volatility': 0.3,
+              'max_drawdown_rate': -0.2,
+              'peak_date': '2026-08-01',
+              'trough_date': '2026-09-01',
+              'recovery_date': null,
+              'warnings': ['FX_REFERENCE_RATE', 'PRICE_ADJUSTMENT_UNVERIFIED'],
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MarketRiskScreen(
+          apiClient: apiClient,
+          initialInstrument: instrument,
+          financialProfile: _financialProfile,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('최근 3개월'), findsOneWidget);
+    expect(find.text('최근 1년'), findsNothing);
+    final stressButton = find.text('이 MDD로 Stress Test 진행');
+    await tester.scrollUntilVisible(
+      stressButton,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(stressButton);
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<StressTestScreen>(find.byType(StressTestScreen))
+          .instrumentCurrency,
+      'USD',
+    );
+  });
+
   testWidgets('MarketRiskScreen renders search input and popular chips', (
     tester,
   ) async {

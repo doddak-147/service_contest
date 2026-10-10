@@ -16,6 +16,7 @@ class Instrument:
 class PricePoint:
     date: date
     adjusted_close: Decimal
+    fx_date: date | None = None
 
 
 class StockDataError(Exception):

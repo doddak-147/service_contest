@@ -58,6 +58,31 @@ def test_stress_test_endpoint_returns_server_calculations() -> None:
     assert response.headers["X-Request-ID"]
 
 
+def test_exchange_shock_response_and_invalid_range() -> None:
+    request = valid_request()
+    request["exchange_rate_change_rate"] = -0.1
+    request["historical_mdd_rate"] = -0.3
+    with make_client() as client:
+        response = client.post("/api/v1/stress-tests/analyze", json=request)
+
+    assert response.status_code == 200
+    down_20 = response.json()[3]
+    assert down_20["assumed_return_rate"] == -0.28
+    assert down_20["price_change_rate"] == -0.2
+    assert down_20["exchange_rate_change_rate"] == -0.1
+    assert down_20["investment_loss_krw"] == 4_200_000
+    assert response.json()[-1]["assumed_return_rate"] == -0.3
+    assert response.json()[-1]["exchange_rate_change_rate"] is None
+
+    request["exchange_rate_change_rate"] = 0.6
+    with make_client() as client:
+        invalid = client.post("/api/v1/stress-tests/analyze", json=request)
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["field_errors"] == [
+        {"field": "exchange_rate_change_rate", "reason": "RATE_OUT_OF_RANGE"}
+    ]
+
+
 @pytest.mark.parametrize(
     ("field", "value", "expected_reason"),
     [

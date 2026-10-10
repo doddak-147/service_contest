@@ -15,6 +15,7 @@ class StressTestScreen extends StatefulWidget {
     this.initialProfile,
     this.historicalMddRate,
     this.historicalMddSource,
+    this.instrumentCurrency,
     super.key,
   });
 
@@ -22,6 +23,7 @@ class StressTestScreen extends StatefulWidget {
   final FinancialProfileInput? initialProfile;
   final double? historicalMddRate;
   final String? historicalMddSource;
+  final String? instrumentCurrency;
 
   @override
   State<StressTestScreen> createState() => _StressTestScreenState();
@@ -40,6 +42,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
 
   late final StressTestApi _stressTestApi;
   String _selectedScenario = ScenarioKeys.down20;
+  double _selectedFxChangeRate = 0.0;
   List<ScenarioResult> _results = const [];
   String? _errorMessage;
   bool _isLoading = false;
@@ -66,6 +69,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     'equity_amount_krw': '자기자본',
     'borrowed_amount_krw': '차입금',
     'annual_loan_rate': '차입금 연이율',
+    'exchange_rate_change_rate': '원/달러 환율 변동률',
   };
 
   @override
@@ -167,6 +171,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
         annual_loan_rate: _parseAnnualRate(),
       ),
       historical_mdd_rate: widget.historicalMddRate,
+      exchange_rate_change_rate: widget.instrumentCurrency == 'USD'
+          ? _selectedFxChangeRate
+          : 0.0,
     );
   }
 
@@ -218,7 +225,10 @@ class _StressTestScreenState extends State<StressTestScreen> {
         'INVESTMENT_SUM_MISMATCH' => '자기자본과 차입금의 합이 총 투자 예정금액과 같아야 합니다.',
         'MUST_BE_GREATER_THAN_ZERO' => '$label은(는) 0보다 커야 합니다.',
         'MUST_BE_NON_NEGATIVE' => '$label은(는) 음수일 수 없습니다.',
-        'RATE_OUT_OF_RANGE' => '차입금 연이율은 0% 이상 100% 이하로 입력해 주세요.',
+        'RATE_OUT_OF_RANGE' =>
+          fieldError.field == 'exchange_rate_change_rate'
+              ? '환율 변동률은 -50% 이상 +50% 이하로 선택해 주세요.'
+              : '차입금 연이율은 0% 이상 100% 이하로 입력해 주세요.',
         _ => error.message,
       };
     }
@@ -288,6 +298,14 @@ class _StressTestScreenState extends State<StressTestScreen> {
                 message:
                     '${widget.historicalMddSource ?? '선택한 종목'}의 과거 MDD '
                     '${(widget.historicalMddRate! * 100).toStringAsFixed(1)}%를 시나리오에 포함합니다.',
+              ),
+            ],
+            if (widget.instrumentCurrency == 'USD') ...[
+              const SizedBox(height: 12),
+              const _ContextBanner(
+                icon: Icons.currency_exchange,
+                message:
+                    '미국 종목의 투자금은 원화 기준입니다. 주가와 원/달러 환율의 변동을 별도로 가정합니다. 과거 MDD에는 당시 환율 영향이 이미 포함되어 추가 환율 가정을 적용하지 않습니다.',
               ),
             ],
             const SizedBox(height: 28),
@@ -398,6 +416,33 @@ class _StressTestScreenState extends State<StressTestScreen> {
                   })
                   .toList(growable: false),
             ),
+            if (widget.instrumentCurrency == 'USD') ...[
+              const SizedBox(height: 20),
+              const Text(
+                '원/달러 환율 변동 가정',
+                style: TextStyle(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              const Text('환율 하락은 같은 달러 자산의 원화 가치가 줄어드는 경우입니다.'),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 8,
+                children: [-0.1, 0.0, 0.1]
+                    .map((rate) {
+                      final percent = (rate * 100).round();
+                      return ChoiceChip(
+                        label: Text(percent > 0 ? '+$percent%' : '$percent%'),
+                        selected: _selectedFxChangeRate == rate,
+                        onSelected: (_) {
+                          final shouldRefresh = _results.isNotEmpty;
+                          setState(() => _selectedFxChangeRate = rate);
+                          if (shouldRefresh) _analyze();
+                        },
+                      );
+                    })
+                    .toList(growable: false),
+              ),
+            ],
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),
               Semantics(

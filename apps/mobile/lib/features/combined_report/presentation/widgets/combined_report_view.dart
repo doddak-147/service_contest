@@ -65,6 +65,12 @@ class CombinedReportView extends StatelessWidget {
         const SizedBox(height: 28),
         const _SectionTitle(number: '4', title: '전체 시나리오 비교'),
         const SizedBox(height: 12),
+        if (result.market_risk?.instrument.currency == 'USD') ...[
+          const Text(
+            '고정 시나리오는 환율 변동 0% 가정입니다. 과거 MDD는 당시 환율을 포함한 원화 기준입니다. 주가·환율 충격을 따로 비교하려면 종목 위험 화면의 Stress Test를 이용하세요.',
+          ),
+          const SizedBox(height: 12),
+        ],
         StressTestComparisonCard(results: result.scenarios),
         const SizedBox(height: 28),
         const _SectionTitle(number: '5', title: '쉬운 결과 설명'),
@@ -288,6 +294,9 @@ String _warningMessage(String warning) {
     'MARKET_DATA_UNAVAILABLE' => '주가 데이터 제공자와 통신하지 못해 시장 위험과 MDD 충격을 제외했습니다.',
     'INSTRUMENT_NOT_FOUND' => '선택한 종목을 찾지 못해 시장 위험과 MDD 충격을 제외했습니다.',
     'INSUFFICIENT_PRICE_DATA' => '관측 주가가 부족해 일부 시장 지표와 MDD 충격을 계산하지 못했습니다.',
+    'PARTIAL_PRICE_HISTORY' => '요청 기간 중 일부 구간만 시세가 제공됩니다.',
+    'FX_REFERENCE_RATE' => '미국 종목의 원화 지표는 ECB 참고 환율로 계산했으며 실제 환전 가격과 다릅니다.',
+    'PRICE_ADJUSTMENT_UNVERIFIED' => '미국 주가의 기업행사 조정 여부는 확인되지 않았습니다.',
     'ZERO_ESSENTIAL_OUTFLOW' => '월 필수지출이 0원이라 비상자금 버팀 기간을 계산하지 못했습니다.',
     _ => '일부 결과를 계산할 수 없어 해당 값을 제외했습니다.',
   };

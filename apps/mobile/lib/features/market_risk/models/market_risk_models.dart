@@ -50,6 +50,7 @@ class MarketRiskResult {
     required this.period_start,
     required this.period_end,
     required this.data_as_of,
+    this.fx_rate_as_of,
     required this.data_source,
     required this.observation_count,
     required this.period_return_rate,
@@ -65,6 +66,7 @@ class MarketRiskResult {
   final String period_start;
   final String period_end;
   final String data_as_of;
+  final String? fx_rate_as_of;
   final String data_source;
   final int observation_count;
   final double? period_return_rate;
@@ -86,6 +88,7 @@ class MarketRiskResult {
       period_start: _readString(json, 'period_start'),
       period_end: _readString(json, 'period_end'),
       data_as_of: _readString(json, 'data_as_of'),
+      fx_rate_as_of: _readNullableString(json, 'fx_rate_as_of'),
       data_source: _readString(json, 'data_source'),
       observation_count: _readInt(json, 'observation_count'),
       period_return_rate: _readNullableDouble(json, 'period_return_rate'),

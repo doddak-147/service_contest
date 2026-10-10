@@ -69,15 +69,18 @@ class StressTestRequest {
   const StressTestRequest({
     required this.financial_profile,
     required this.historical_mdd_rate,
+    this.exchange_rate_change_rate = 0.0,
   });
 
   final FinancialProfileInput financial_profile;
   final double? historical_mdd_rate;
+  final double exchange_rate_change_rate;
 
   Map<String, dynamic> toJson() {
     return {
       'financial_profile': financial_profile.toJson(),
       'historical_mdd_rate': historical_mdd_rate,
+      'exchange_rate_change_rate': exchange_rate_change_rate,
     };
   }
 }
@@ -99,11 +102,15 @@ class ScenarioResult {
     required this.estimated_monthly_interest_krw,
     required this.recovery_required_rate,
     required this.unavailable_reasons,
+    this.price_change_rate,
+    this.exchange_rate_change_rate,
   });
 
   final String scenario_key;
   final String label;
   final double assumed_return_rate;
+  final double? price_change_rate;
+  final double? exchange_rate_change_rate;
   final int projected_investment_value_krw;
   final int investment_pnl_krw;
   final int investment_loss_krw;
@@ -127,6 +134,11 @@ class ScenarioResult {
       scenario_key: scenarioKey,
       label: _readString(json, 'label'),
       assumed_return_rate: _readDouble(json, 'assumed_return_rate'),
+      price_change_rate: _readNullableDouble(json, 'price_change_rate'),
+      exchange_rate_change_rate: _readNullableDouble(
+        json,
+        'exchange_rate_change_rate',
+      ),
       projected_investment_value_krw: _readInt(
         json,
         'projected_investment_value_krw',

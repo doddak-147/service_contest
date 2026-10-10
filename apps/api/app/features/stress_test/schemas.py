@@ -41,12 +41,15 @@ class FinancialProfileInput(ContractModel):
 class StressTestRequest(ContractModel):
     financial_profile: FinancialProfileInput
     historical_mdd_rate: float | None
+    exchange_rate_change_rate: float = 0.0
 
 
 class ScenarioResult(ContractModel):
     scenario_key: ScenarioKey
     label: str
     assumed_return_rate: float
+    price_change_rate: float | None = None
+    exchange_rate_change_rate: float | None = None
     projected_investment_value_krw: int
     investment_pnl_krw: int
     investment_loss_krw: int
@@ -66,6 +69,16 @@ class ScenarioResult(ContractModel):
             scenario_key=value.scenario_key,
             label=value.label,
             assumed_return_rate=float(value.assumed_return_rate),
+            price_change_rate=(
+                float(value.price_change_rate)
+                if value.price_change_rate is not None
+                else None
+            ),
+            exchange_rate_change_rate=(
+                float(value.exchange_rate_change_rate)
+                if value.exchange_rate_change_rate is not None
+                else None
+            ),
             projected_investment_value_krw=value.projected_investment_value_krw,
             investment_pnl_krw=value.investment_pnl_krw,
             investment_loss_krw=value.investment_loss_krw,

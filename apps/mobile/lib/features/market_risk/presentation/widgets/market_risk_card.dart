@@ -45,22 +45,27 @@ class MarketRiskCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 6,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.background,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.border),
-                  ),
-                  child: Text(
-                    result.data_source,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.textMuted,
+                Flexible(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.background,
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: AppColors.border),
+                    ),
+                    child: Text(
+                      result.instrument.currency == 'USD'
+                          ? 'Naver + ECB'
+                          : result.data_source,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.textMuted,
+                      ),
                     ),
                   ),
                 ),
@@ -220,9 +225,21 @@ class MarketRiskCard extends StatelessWidget {
               ),
               children: [
                 _DataLimitText(text: '데이터 제공자: ${result.data_source}'),
-                const _DataLimitText(
-                  text: '기간 수익률·변동성·MDD는 제공자가 조정한 일별 종가를 사용합니다.',
-                ),
+                if (result.instrument.currency == 'USD') ...[
+                  _DataLimitText(
+                    text:
+                        '미국 주가(USD) × ECB 기준 원/달러 환율로 원화 가격을 산출했습니다. '
+                        '최근 환율 기준일: ${result.fx_rate_as_of ?? '확인 불가'}.',
+                  ),
+                  const _DataLimitText(
+                    text:
+                        'ECB 환율은 EUR 대비 USD·KRW의 일별 기준값으로 계산한 참고 환율입니다. '
+                        '실제 환전 가격·수수료와 다릅니다.',
+                  ),
+                ] else
+                  const _DataLimitText(
+                    text: '기간 수익률·변동성·MDD는 제공자가 조정한 일별 종가를 사용합니다.',
+                  ),
                 const _DataLimitText(
                   text: '액면분할·병합 등 기업행사 반영 기준과 과거 데이터 정정은 제공자 정책에 의존합니다.',
                 ),
@@ -323,6 +340,9 @@ Color _recoveryColor(MarketRiskResult result) {
 String _warningLabel(String warning) {
   return switch (warning) {
     'INSUFFICIENT_PRICE_DATA' => '관측치가 부족해 일부 지표를 계산하지 못했습니다.',
+    'PARTIAL_PRICE_HISTORY' => '요청한 전체 기간보다 짧은 구간만 관측했습니다.',
+    'FX_REFERENCE_RATE' => '원화 수치는 ECB 참고 환율 기준이며 실제 환전 손익과 다릅니다.',
+    'PRICE_ADJUSTMENT_UNVERIFIED' => '미국 주가의 기업행사 조정 여부는 확인되지 않았습니다.',
     'MARKET_DATA_UNAVAILABLE' => '현재 시세 데이터를 불러올 수 없습니다.',
     _ => warning,
   };

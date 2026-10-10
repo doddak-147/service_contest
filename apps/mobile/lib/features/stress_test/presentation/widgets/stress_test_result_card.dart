@@ -56,6 +56,17 @@ class StressTestResultCard extends StatelessWidget {
             ),
             const SizedBox(height: 16),
             const Divider(height: 1),
+            if (result.price_change_rate != null &&
+                result.exchange_rate_change_rate != null &&
+                result.exchange_rate_change_rate != 0) ...[
+              const SizedBox(height: 12),
+              Text(
+                '주가 ${_formatAssumedRate(result.price_change_rate!)} × '
+                '원/달러 환율 ${_formatAssumedRate(result.exchange_rate_change_rate!)}'
+                ' → 원화 기준 ${_formatAssumedRate(result.assumed_return_rate)}',
+                style: const TextStyle(color: AppColors.textMuted),
+              ),
+            ],
             _ResultRow(
               emphasize: true,
               label: '예상 투자손실',

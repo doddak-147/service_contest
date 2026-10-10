@@ -45,6 +45,8 @@ class ScenarioCalculation:
     scenario_key: ScenarioKey
     label: str
     assumed_return_rate: Decimal
+    price_change_rate: Decimal | None
+    exchange_rate_change_rate: Decimal | None
     projected_investment_value_krw: int
     investment_pnl_krw: int
     investment_loss_krw: int
@@ -129,9 +131,31 @@ def calculate_scenario(
     scenario_key: ScenarioKey,
     label: str,
     assumed_return_rate: Decimal,
+    exchange_rate_change_rate: Decimal = Decimal("0"),
 ) -> ScenarioCalculation:
     validate_financial_profile(profile)
     _validate_scenario(scenario_key, assumed_return_rate)
+    if (
+        not exchange_rate_change_rate.is_finite()
+        or not Decimal("-0.5") <= exchange_rate_change_rate <= Decimal("0.5")
+    ):
+        raise CalculationInputError(
+            "exchange_rate_change_rate", "RATE_OUT_OF_RANGE"
+        )
+
+    price_change_rate = assumed_return_rate
+    if scenario_key == "historical_mdd":
+        # Historical MDD is already based on KRW-converted prices.
+        fx_change: Decimal | None = None
+        displayed_price_change: Decimal | None = None
+    else:
+        fx_change = exchange_rate_change_rate
+        displayed_price_change = price_change_rate
+        assumed_return_rate = (
+            (Decimal("1") + price_change_rate)
+            * (Decimal("1") + exchange_rate_change_rate)
+            - Decimal("1")
+        )
 
     investment_amount = Decimal(profile.planned_investment_krw)
     investment_pnl = investment_amount * assumed_return_rate
@@ -182,6 +206,14 @@ def calculate_scenario(
         scenario_key=scenario_key,
         label=label,
         assumed_return_rate=_round_ratio(assumed_return_rate),
+        price_change_rate=(
+            _round_ratio(displayed_price_change)
+            if displayed_price_change is not None
+            else None
+        ),
+        exchange_rate_change_rate=(
+            _round_ratio(fx_change) if fx_change is not None else None
+        ),
         projected_investment_value_krw=_round_money(projected_value),
         investment_pnl_krw=_round_money(investment_pnl),
         investment_loss_krw=_round_money(investment_loss),
@@ -206,9 +238,16 @@ def calculate_scenario(
 def calculate_stress_tests(
     profile: FinancialProfile,
     historical_mdd_rate: Decimal | None,
+    exchange_rate_change_rate: Decimal = Decimal("0"),
 ) -> tuple[ScenarioCalculation, ...]:
     scenarios = [
-        calculate_scenario(profile, key, label, rate)
+        calculate_scenario(
+            profile,
+            key,
+            label,
+            rate,
+            exchange_rate_change_rate,
+        )
         for key, label, rate in FIXED_SCENARIOS
     ]
     if historical_mdd_rate is not None:

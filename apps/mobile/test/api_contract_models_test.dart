@@ -4,6 +4,47 @@ import 'package:financial_shock_preview/features/stress_test/models/stress_test_
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  test('미국 종목 환율 충격 요청은 계약 필드를 그대로 전송한다', () {
+    const profile = FinancialProfileInput(
+      monthly_income_krw: 3000000,
+      monthly_fixed_expenses_krw: 1800000,
+      emergency_fund_krw: 5000000,
+      existing_loan_balance_krw: 0,
+      monthly_debt_payment_krw: 0,
+      planned_investment_krw: 10000000,
+      equity_amount_krw: 6000000,
+      borrowed_amount_krw: 4000000,
+      annual_loan_rate: 0.06,
+    );
+    const request = StressTestRequest(
+      financial_profile: profile,
+      historical_mdd_rate: -0.3,
+      exchange_rate_change_rate: -0.1,
+    );
+    expect(request.toJson()['exchange_rate_change_rate'], -0.1);
+    final result = ScenarioResult.fromJson({
+      'scenario_key': ScenarioKeys.down20,
+      'label': '20% 하락',
+      'assumed_return_rate': -0.28,
+      'price_change_rate': -0.2,
+      'exchange_rate_change_rate': -0.1,
+      'projected_investment_value_krw': 7200000,
+      'investment_pnl_krw': -2800000,
+      'investment_loss_krw': 2800000,
+      'reported_total_debt_krw': 4000000,
+      'net_investment_equity_krw': 3200000,
+      'loss_to_equity_ratio': 0.466667,
+      'loss_to_emergency_fund_ratio': 0.56,
+      'loss_to_monthly_fixed_expenses': 1.555556,
+      'estimated_annual_interest_krw': 240000,
+      'estimated_monthly_interest_krw': 20000,
+      'recovery_required_rate': 0.388889,
+      'unavailable_reasons': <String>[],
+    });
+    expect(result.price_change_rate, -0.2);
+    expect(result.exchange_rate_change_rate, -0.1);
+    expect(result.assumed_return_rate, -0.28);
+  });
   test('ExplanationInput은 원본 재무정보 없이 계약 필드만 직렬화한다', () {
     const input = ExplanationInput(
       scenario_key: ScenarioKeys.historicalMdd,

@@ -21,7 +21,9 @@ def analyze_stress_tests(request: StressTestRequest) -> list[ScenarioResult]:
     )
     try:
         calculations = calculate_stress_tests(
-            request.financial_profile.to_domain(), historical_mdd_rate
+            request.financial_profile.to_domain(),
+            historical_mdd_rate,
+            Decimal(str(request.exchange_rate_change_rate)),
         )
     except CalculationInputError as exc:
         raise ApiValidationError(

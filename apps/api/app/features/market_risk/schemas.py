@@ -39,6 +39,7 @@ class MarketRiskResult(ContractModel):
     period_start: date
     period_end: date
     data_as_of: date
+    fx_rate_as_of: date | None = None
     data_source: str
     observation_count: int
     period_return_rate: float | None
@@ -56,6 +57,7 @@ class MarketRiskResult(ContractModel):
             period_start=calc.period_start,
             period_end=calc.period_end,
             data_as_of=calc.data_as_of,
+            fx_rate_as_of=calc.fx_rate_as_of,
             data_source=calc.data_source,
             observation_count=calc.observation_count,
             period_return_rate=(

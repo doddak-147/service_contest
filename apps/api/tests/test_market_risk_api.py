@@ -1,5 +1,6 @@
 from datetime import date
 
+from fastapi import Request
 from fastapi.testclient import TestClient
 
 from app.features.market_risk.router import get_stock_adapter
@@ -24,6 +25,19 @@ def make_client() -> TestClient:
         )
     )
     return TestClient(app)
+
+
+def test_stock_adapter_is_reused_for_fx_cache_within_one_app() -> None:
+    app = create_app(
+        Settings(
+            app_env="test",
+            cors_origins=(TEST_ORIGIN,),
+            stock_data_provider="naver",
+        )
+    )
+    request = Request({"type": "http", "app": app})
+
+    assert get_stock_adapter(request) is get_stock_adapter(request)
 
 
 def test_search_instruments_returns_matching_results() -> None:

@@ -76,6 +76,53 @@ def test_get_price_history_resolves_name_and_parses_prices() -> None:
     asyncio.run(run())
 
 
+def test_us_search_and_history_convert_each_close_with_aligned_fx() -> None:
+    item = {
+        "code": "AAPL",
+        "name": "애플",
+        "typeCode": "NASDAQ",
+        "nationCode": "USA",
+        "category": "stock",
+        "reutersCode": "AAPL.O",
+    }
+    fx_csv = (
+        "CURRENCY,TIME_PERIOD,OBS_VALUE,OBS_STATUS\n"
+        "USD,2026-10-08,1.25,A\n"
+        "KRW,2026-10-08,1500,A\n"
+        "USD,2026-10-09,1.20,A\n"
+        "KRW,2026-10-09,1560,A\n"
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.host == "ac.stock.naver.com":
+            return httpx.Response(200, json=autocomplete_response([item]))
+        if request.url.host == "api.stock.naver.com":
+            assert request.url.path.endswith("/AAPL.O")
+            return httpx.Response(
+                200,
+                json={"priceInfos": [
+                    {"localDate": "20261008", "closePrice": "100"},
+                    {"localDate": "20261009", "closePrice": "90"},
+                ]},
+            )
+        return httpx.Response(200, text=fx_csv)
+
+    async def run() -> None:
+        async with httpx.AsyncClient(transport=httpx.MockTransport(handler)) as client:
+            adapter = NaverStockPriceAdapter(client)
+            results = await adapter.search_instruments("AAPL")
+            source, instrument, points = await adapter.get_price_history(
+                "NASDAQ", "AAPL", date(2026, 10, 8), date(2026, 10, 9)
+            )
+        assert results == [instrument]
+        assert instrument.currency == "USD"
+        assert source == "naver_finance+ecb_reference_fx"
+        assert [point.adjusted_close for point in points] == [120000, 117000]
+        assert points[-1].fx_date == date(2026, 10, 9)
+
+    asyncio.run(run())
+
+
 def test_get_price_history_normalizes_duplicate_trading_dates() -> None:
     xml = """<?xml version="1.0" encoding="EUC-KR" ?>
     <protocol><chartdata name="CJ">

@@ -4,7 +4,7 @@
 
 - **모바일:** Flutter + Dart(Android)
 - **API·계산:** FastAPI + Python
-- **외부 연동:** Naver Finance 주가 어댑터, OpenAI-compatible LLM API
+- **외부 연동:** Naver Finance 국내·미국 주가 어댑터, ECB 일별 기준 환율, OpenAI-compatible LLM API
 - **테스트·정적 검사:** pytest, Ruff, Flutter test, Flutter analyze
 - **배포:** Naver Cloud Server(Ubuntu 24.04), Nginx, Uvicorn, HTTPS
 
@@ -28,7 +28,8 @@ Single FastAPI Service (Uvicorn/systemd)
   ├─ stress-test       고정 가격 충격 및 회복률 계산
   ├─ combined-report   개인×종목 결합 및 결과 구성
   └─ integrations
-       ├─ Stock API Adapter
+       ├─ Stock API Adapter (국내·미국)
+       ├─ ECB FX Adapter (EUR 교차 환율 → KRW/USD)
        └─ LLM Explanation Adapter
 ```
 
@@ -66,12 +67,14 @@ docs/API_CONTRACT.md        # 필드명과 API의 단일 기준
 
 1. 모바일과 FastAPI가 각각 입력 형식을 검증한다.
 2. 주가 어댑터가 가격 데이터와 출처·기준일을 반환한다.
+   미국 종목은 일별 USD 종가에 같은 날 또는 5일 이내 직전 ECB 참고 환율을 곱해 KRW 시계열을 만든다. 환율은 서버 메모리에 최대 6시간 캐시하고 원본 재무정보와 함께 저장하지 않는다.
 3. 계산 함수가 외부 I/O 없이 금융체력, 시장 위험, 고정 시나리오, 결합 영향을 계산한다.
 4. Report 조합기가 계산 버전, 입력 근거, 경고와 면책을 붙인다.
 5. LLM 어댑터에는 Report 전체가 아닌 최소 설명용 결과만 전달한다.
 6. 모바일은 숫자 Report를 먼저 표시하고 검증된 AI 설명을 부가 정보로 표시한다.
 
 외부 API 장애가 계산식을 바꾸어서는 안 된다. 시세가 없으면 시장·결합 분석을 중단하고 재무체력과 고정 하락 시나리오는 계속 제공한다. LLM 장애 시 정적 설명으로 대체한다.
+미국 종목의 고정 시나리오는 `(1 + 주가 변동률) × (1 + 원/달러 환율 변동률) - 1`을 Python에서 계산한다. 원화 환산 과거 MDD에는 환율 충격을 중복 적용하지 않는다. GitHub Actions는 ECB 소스의 최근 갱신 여부만 감시하고 환율 공급·캐시·배포 경로에는 포함하지 않는다.
 
 ## 5. LLM 안전 경계
 

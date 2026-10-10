@@ -55,6 +55,24 @@ def test_market_risk_calculation_standard_series() -> None:
     assert calc.warnings == ()
 
 
+def test_us_market_risk_uses_krw_converted_prices_and_exposes_fx_date() -> None:
+    instrument = Instrument("AAPL", "NASDAQ", "애플", "USD")
+    points = [
+        PricePoint(date(2024, 1, 2), Decimal("150000"), date(2024, 1, 2)),
+        PricePoint(date(2024, 1, 3), Decimal("135000"), date(2024, 1, 3)),
+        PricePoint(date(2024, 1, 4), Decimal("120000"), date(2024, 1, 3)),
+    ]
+    calc = calculate_market_risk(
+        instrument, points, date(2024, 1, 1), date(2024, 1, 4), "test_fx"
+    )
+
+    assert calc.period_return_rate == Decimal("-0.200000")
+    assert calc.max_drawdown_rate == Decimal("-0.200000")
+    assert calc.fx_rate_as_of == date(2024, 1, 3)
+    assert "FX_REFERENCE_RATE" in calc.warnings
+    assert "PRICE_ADJUSTMENT_UNVERIFIED" in calc.warnings
+
+
 def test_market_risk_calculation_with_full_recovery() -> None:
     instrument = make_instrument()
     points = [

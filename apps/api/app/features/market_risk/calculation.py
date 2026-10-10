@@ -17,6 +17,7 @@ class MarketRiskCalculation:
     period_start: date
     period_end: date
     data_as_of: date
+    fx_rate_as_of: date | None
     data_source: str
     observation_count: int
     period_return_rate: Decimal | None
@@ -58,6 +59,7 @@ def calculate_market_risk(
             period_start=first_date,
             period_end=last_date,
             data_as_of=last_date,
+            fx_rate_as_of=sorted_points[-1].fx_date if n else None,
             data_source=data_source,
             observation_count=n,
             period_return_rate=None,
@@ -76,6 +78,11 @@ def calculate_market_risk(
     data_as_of = last_pt.date
     observation_count = n
     warnings: list[str] = []
+    if (first_pt.date - requested_start_date).days > 7:
+        warnings.append("PARTIAL_PRICE_HISTORY")
+    if instrument.currency == "USD":
+        warnings.append("FX_REFERENCE_RATE")
+        warnings.append("PRICE_ADJUSTMENT_UNVERIFIED")
 
     # 1. Period return rate
     if first_pt.adjusted_close <= Decimal("0"):
@@ -152,6 +159,7 @@ def calculate_market_risk(
         period_start=period_start,
         period_end=period_end,
         data_as_of=data_as_of,
+        fx_rate_as_of=last_pt.fx_date,
         data_source=data_source,
         observation_count=observation_count,
         period_return_rate=period_return_rate,

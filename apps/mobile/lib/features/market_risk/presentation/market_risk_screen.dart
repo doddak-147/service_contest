@@ -10,6 +10,7 @@ import '../models/market_risk_models.dart';
 import 'widgets/market_risk_card.dart';
 
 enum PeriodPreset {
+  threeMonths(label: '최근 3개월', days: 90),
   oneYear(label: '최근 1년', days: 365),
   threeYears(label: '최근 3년', days: 365 * 3),
   fiveYears(label: '최근 5년', days: 365 * 5);
@@ -70,6 +71,9 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
     _repository = MarketRiskRepository(apiClient: widget.apiClient);
     if (widget.initialInstrument != null) {
       _selectedInstrument = widget.initialInstrument;
+      if (widget.initialInstrument!.currency == 'USD') {
+        _selectedPeriod = PeriodPreset.threeMonths;
+      }
       _fetchMarketRisk();
     }
   }
@@ -172,6 +176,9 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
     _searchRequestId++;
     setState(() {
       _selectedInstrument = instrument;
+      _selectedPeriod = instrument.currency == 'USD'
+          ? PeriodPreset.threeMonths
+          : PeriodPreset.oneYear;
       _searchResults = [];
       _searchController.text = instrument.name;
       _riskResult = null;
@@ -227,7 +234,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    '종목의 과거 조정주가를 분석하여 역사적 최대 하락폭(MDD), '
+                    '종목의 과거 가격을 분석하여 관측 기간의 최대 하락폭(MDD), '
                     '연환산 변동성, 전고점 회복 여부를 확인합니다. 미래 수익을 예측하는 것이 아니라 '
                     '과거에 겪었던 최악의 위험 수준을 파악하기 위함입니다.',
                     style: theme.textTheme.bodyMedium,
@@ -253,7 +260,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: '종목명 또는 6자리 코드 (예: 삼성전자, 005930)',
+                      hintText: '종목명·코드 (예: 삼성전자, 005930, AAPL)',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -370,24 +377,38 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
               ),
               const SizedBox(height: 8),
               Row(
-                children: PeriodPreset.values.map((preset) {
-                  final isSelected = _selectedPeriod == preset;
-                  return Padding(
-                    padding: const EdgeInsets.only(right: 8),
-                    child: ChoiceChip(
-                      label: Text(preset.label),
-                      selected: isSelected,
-                      onSelected: (selected) {
-                        if (selected && _selectedPeriod != preset) {
-                          setState(() => _selectedPeriod = preset);
-                          _fetchMarketRisk();
-                        }
-                      },
-                    ),
-                  );
-                }).toList(),
+                children:
+                    (_selectedInstrument!.currency == 'USD'
+                            ? [PeriodPreset.threeMonths]
+                            : PeriodPreset.values.where(
+                                (preset) => preset != PeriodPreset.threeMonths,
+                              ))
+                        .map((preset) {
+                          final isSelected = _selectedPeriod == preset;
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(preset.label),
+                              selected: isSelected,
+                              onSelected: (selected) {
+                                if (selected && _selectedPeriod != preset) {
+                                  setState(() => _selectedPeriod = preset);
+                                  _fetchMarketRisk();
+                                }
+                              },
+                            ),
+                          );
+                        })
+                        .toList(),
               ),
               const SizedBox(height: 20),
+              if (_selectedInstrument!.currency == 'USD') ...[
+                const Text(
+                  '미국 종목은 현재 제공되는 최근 일별 시세 범위에서 원/달러 기준환율을 결합해 분석합니다. '
+                  '긴 기간의 위험을 대표하지 않습니다.',
+                ),
+                const SizedBox(height: 12),
+              ],
             ],
 
             // Error banner
@@ -435,7 +456,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                       CircularProgressIndicator(),
                       SizedBox(height: 16),
                       Text(
-                        '조정주가 데이터 및 과거 위험 지표를 계산하고 있습니다...',
+                        '과거 가격과 환율을 확인하고 위험 지표를 계산하고 있습니다...',
                         style: TextStyle(
                           color: AppColors.textMuted,
                           fontSize: 13,
@@ -482,6 +503,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           initialProfile: widget.financialProfile,
                           historicalMddRate: result.max_drawdown_rate,
                           historicalMddSource: result.instrument.name,
+                          instrumentCurrency: result.instrument.currency,
                         ),
                       ),
                     );

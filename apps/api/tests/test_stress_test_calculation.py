@@ -44,6 +44,38 @@ def test_leveraged_investment_down_20_matches_reference_values() -> None:
     assert result.loss_to_monthly_fixed_expenses == Decimal("1.666667")
 
 
+def test_stock_and_exchange_shocks_compound_in_krw_without_changing_interest() -> None:
+    result = calculate_scenario(
+        make_profile(), "down_20", "20% 하락", Decimal("-0.2"), Decimal("-0.1")
+    )
+
+    assert result.price_change_rate == Decimal("-0.200000")
+    assert result.exchange_rate_change_rate == Decimal("-0.100000")
+    assert result.assumed_return_rate == Decimal("-0.280000")
+    assert result.investment_loss_krw == 4_200_000
+    assert result.net_investment_equity_krw == 800_000
+    assert result.estimated_monthly_interest_krw == 50_000
+
+
+def test_historical_krw_mdd_does_not_apply_exchange_shock_twice() -> None:
+    results = calculate_stress_tests(
+        make_profile(), Decimal("-0.3"), Decimal("0.1")
+    )
+
+    assert results[3].assumed_return_rate == Decimal("-0.120000")
+    assert results[-1].assumed_return_rate == Decimal("-0.300000")
+    assert results[-1].price_change_rate is None
+    assert results[-1].exchange_rate_change_rate is None
+
+
+def test_invalid_exchange_shock_is_rejected() -> None:
+    with pytest.raises(CalculationInputError) as exc_info:
+        calculate_stress_tests(make_profile(), None, Decimal("0.6"))
+
+    assert exc_info.value.field == "exchange_rate_change_rate"
+    assert exc_info.value.reason == "RATE_OUT_OF_RANGE"
+
+
 def test_investment_without_borrowing_has_no_interest() -> None:
     profile = replace(
         make_profile(),

@@ -54,6 +54,7 @@ MarketRiskResult {
   period_start: date
   period_end: date
   data_as_of: date
+  fx_rate_as_of: date | null
   data_source: string
   observation_count: integer
   period_return_rate: number | null
@@ -71,6 +72,8 @@ ScenarioResult {
   scenario_key: ScenarioKey
   label: string
   assumed_return_rate: number
+  price_change_rate: number | null
+  exchange_rate_change_rate: number | null
   projected_investment_value_krw: integer
   investment_pnl_krw: integer
   investment_loss_krw: integer
@@ -159,6 +162,7 @@ ExplanationResult {
   "period_start": "2023-01-02",
   "period_end": "2025-12-30",
   "data_as_of": "2025-12-30",
+  "fx_rate_as_of": null,
   "data_source": "provider_name",
   "observation_count": 735,
   "period_return_rate": 0.12,
@@ -172,6 +176,8 @@ ExplanationResult {
 ```
 
 `period_return_rate`, `annualized_volatility`, `max_drawdown_rate`는 `number | null`이다. 분석 불가 값은 `null`로 두고 `warnings`에 사유 코드를 넣는다.
+
+미국 주식은 `market`이 `NASDAQ | NYSE | AMEX`, `currency`가 `USD`이며 현재 일별 시세 제공 범위에 맞춰 앱에서 최근 3개월만 조회한다. 서버는 해당 날짜의 USD 종가에 ECB의 EUR 대비 KRW·USD 일별 기준 환율을 교차 계산한 원/달러 참고 환율을 곱해 원화 가격 시계열을 만든다. 기간 수익률·변동성·MDD는 이 원화 시계열 기준이다. `fx_rate_as_of`는 마지막 주가 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 휴일에는 최대 5일 전 기준 환율을 사용하고, 그보다 오래된 환율만 있으면 해당 주가 관측을 제외한다. `data_source`는 미국 종목에서 `naver_finance+ecb_reference_fx`다. `PARTIAL_PRICE_HISTORY`, `FX_REFERENCE_RATE`, `PRICE_ADJUSTMENT_UNVERIFIED` 경고는 각각 기간 부족, 실제 환전가와의 차이, 미국 주가의 기업행사 조정 여부 미확인을 뜻한다.
 
 ### FinancialHealthResult
 
@@ -195,6 +201,8 @@ ExplanationResult {
   "scenario_key": "down_20",
   "label": "20% 하락",
   "assumed_return_rate": -0.2,
+  "price_change_rate": -0.2,
+  "exchange_rate_change_rate": 0.0,
   "projected_investment_value_krw": 8000000,
   "investment_pnl_krw": -2000000,
   "investment_loss_krw": 2000000,
@@ -211,6 +219,7 @@ ExplanationResult {
 ```
 
 `scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd`다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
+고정 시나리오의 `assumed_return_rate`는 원화 기준 최종 수익률이며 `(1 + price_change_rate) × (1 + exchange_rate_change_rate) - 1`로 계산한다. `historical_mdd`는 이미 원화 기준으로 계산된 과거 낙폭이므로 두 변동률 필드는 `null`이고 환율 충격을 중복 적용하지 않는다.
 
 ## 3. 엔드포인트
 
@@ -253,11 +262,13 @@ ExplanationResult {
     "borrowed_amount_krw": 4000000,
     "annual_loan_rate": 0.06
   },
-  "historical_mdd_rate": -0.31
+  "historical_mdd_rate": -0.31,
+  "exchange_rate_change_rate": -0.1
 }
 ```
 
 실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`가 온다. 모바일의 차입투자 Stress Test는 반환된 전체 시나리오를 선택·비교해 표시한다.
+`exchange_rate_change_rate`는 선택 필드이며 생략 시 `0`이다. 허용 범위는 `-0.5..0.5`다. 미국 종목의 원화 환산 시나리오에서만 사용하고, 국내 종목 화면은 `0`을 전달한다. 이 값은 실시간 환율이나 미래 예측이 아닌 독립적인 가정이다. 종목 정보가 없는 이 엔드포인트 자체는 통화 종류를 검증하지 않는다.
 
 ### `POST /api/v1/combined-analyses`
 

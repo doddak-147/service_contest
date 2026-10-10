@@ -36,7 +36,7 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 `Instrument`는 `symbol`, `market`, `name`, `currency`로 종목을 식별한다. 같은 심볼이 다른 시장에 존재할 수 있으므로 `(market, symbol)`을 한 쌍으로 사용한다.
 
-`PricePoint`는 `date`, `adjusted_close`로 구성된 일별 조정종가다. 주가 어댑터 내부에서만 사용하며 외부 제공자의 필드명을 그대로 도메인에 노출하지 않는다.
+`PricePoint`는 `date`, `adjusted_close`, 선택적 `fx_date`로 구성된다. 국내 종목은 일별 조정종가, 미국 종목은 제공자의 USD 종가에 ECB 참고 환율을 곱한 KRW 가격이며 조정 여부는 확인되지 않았다. `fx_date`는 미국 종목 관측에 적용한 환율 기준일이다. 외부 제공자의 필드명을 그대로 도메인에 노출하지 않는다.
 
 ## 3. 계산 결과 모델
 
@@ -52,12 +52,13 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 ### MarketRiskResult
 
 종목, 분석 기간, 데이터 제공자·기준일·관측치와 함께 `period_return_rate`, `annualized_volatility`, `max_drawdown_rate`를 가진다. `max_drawdown_rate`는 `-1..0` 범위의 음수다. MDD 구간은 `peak_date`, `trough_date`, `recovery_date`로 표현하며 미회복 상태의 `recovery_date`는 `null`이다.
+`fx_rate_as_of`는 마지막 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 미국 종목의 위험 지표는 원화 가격 시계열 기준이다.
 
 ### ScenarioResult
 
 `scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd` 중 하나다. 각 결과는 다음을 가진다.
 
-- 가정: `label`, `assumed_return_rate`
+- 가정: `label`, 원화 기준 `assumed_return_rate`, `price_change_rate`, `exchange_rate_change_rate`
 - 자산·손익: `projected_investment_value_krw`, `investment_pnl_krw`, `investment_loss_krw`
 - 부채·지분: `reported_total_debt_krw`, `net_investment_equity_krw`
 - 충격: `loss_to_equity_ratio`, `loss_to_emergency_fund_ratio`, `loss_to_monthly_fixed_expenses`
@@ -65,6 +66,7 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 - 예외: `unavailable_reasons`
 
 `investment_pnl_krw`는 상승 시 양수, 하락 시 음수다. `investment_loss_krw`는 손실이 없으면 0인 비음수 값이다. 가격 충격만 적용하므로 부채 원금과 월 이자는 시나리오별로 변하지 않는다.
+고정 시나리오는 주가·환율 충격을 곱해 원화 수익률을 만든다. 과거 MDD는 이미 원화 기준이므로 두 개별 충격 필드는 `null`이다.
 
 ### CombinedAnalysisResult
 
