@@ -10,8 +10,9 @@ from app.integrations.stock_api.base import (
     MarketDataUnavailableError,
     StockPriceAdapter,
 )
+from app.integrations.stock_api.disabled import DisabledStockPriceAdapter
 from app.integrations.stock_api.fake import FakeStockPriceAdapter
-from app.integrations.stock_api.naver import NaverStockPriceAdapter
+from app.integrations.stock_api.twelve import TwelveStockPriceAdapter
 from app.shared.errors import ApiValidationError, FieldError, _json_error
 
 router = APIRouter(prefix="/api/v1", tags=["market-risk"])
@@ -23,10 +24,14 @@ def get_stock_adapter(request: Request) -> StockPriceAdapter:
         return cached
     settings = getattr(request.app.state, "settings", None)
     provider = getattr(settings, "stock_data_provider", "fake") if settings else "fake"
-    if provider == "naver":
-        adapter: StockPriceAdapter = NaverStockPriceAdapter()
+    if provider == "twelve":
+        adapter: StockPriceAdapter = TwelveStockPriceAdapter(
+            api_key=settings.twelve_data_api_key
+        )
     elif provider == "fake":
         adapter = FakeStockPriceAdapter()
+    elif provider == "disabled":
+        adapter = DisabledStockPriceAdapter()
     else:
         raise RuntimeError("Unsupported stock data provider configuration")
     request.app.state.stock_adapter = adapter

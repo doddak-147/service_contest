@@ -19,7 +19,7 @@ void main() {
           '/api/v1/financial-health/analyze' => _jsonResponse(
             _financialHealthResponse,
           ),
-          '/api/v1/market-risk/KRX/005930' => _jsonResponse(
+          '/api/v1/market-risk/NASDAQ/AAPL' => _jsonResponse(
             _marketRiskResponse,
           ),
           '/api/v1/combined-analyses' => _handleCombinedRequest(request),
@@ -75,12 +75,17 @@ void main() {
     await tester.pumpAndSettle();
 
     await tester.scrollUntilVisible(
-      find.text('삼성전자 (005930)'),
+      find.text('Apple (AAPL)'),
       400,
       scrollable: find.byType(Scrollable).first,
     );
-    await tester.tap(find.text('삼성전자 (005930)'));
+    await tester.tap(find.text('Apple (AAPL)'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('과거 위험 핵심 지표'),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('과거 위험 핵심 지표'), findsOneWidget);
 
     final combinedButton = find.widgetWithText(
@@ -110,7 +115,7 @@ void main() {
       containsAllInOrder([
         '/health',
         '/api/v1/financial-health/analyze',
-        '/api/v1/market-risk/KRX/005930',
+        '/api/v1/market-risk/NASDAQ/AAPL',
         '/api/v1/combined-analyses',
         '/api/v1/explanations',
       ]),
@@ -123,7 +128,7 @@ http.Response _handleCombinedRequest(http.Request request) {
   final profile = body['financial_profile'] as Map<String, dynamic>;
   expect(profile['planned_investment_krw'], 10000000);
   expect(profile['equity_amount_krw'], 6000000);
-  expect((body['instrument'] as Map<String, dynamic>)['symbol'], '005930');
+  expect((body['instrument'] as Map<String, dynamic>)['symbol'], 'AAPL');
   return _jsonResponse(_combinedResponse);
 }
 
@@ -158,26 +163,27 @@ const _financialHealthResponse = {
 };
 
 const _instrument = {
-  'symbol': '005930',
-  'market': 'KRX',
-  'name': '삼성전자',
-  'currency': 'KRW',
+  'symbol': 'AAPL',
+  'market': 'NASDAQ',
+  'name': 'Apple',
+  'currency': 'USD',
 };
 
 const _marketRiskResponse = {
   'instrument': _instrument,
-  'period_start': '2025-09-18',
+  'period_start': '2026-07-18',
   'period_end': '2026-09-18',
   'data_as_of': '2026-09-18',
-  'data_source': 'fake_provider',
-  'observation_count': 252,
+  'fx_rate_as_of': '2026-09-18',
+  'data_source': 'twelve_data+ecb_reference_fx',
+  'observation_count': 45,
   'period_return_rate': 0.1,
   'annualized_volatility': 0.2,
   'max_drawdown_rate': -0.3,
   'peak_date': '2025-11-03',
   'trough_date': '2026-03-02',
   'recovery_date': null,
-  'warnings': <String>[],
+  'warnings': <String>['FX_REFERENCE_RATE'],
 };
 
 final _combinedResponse = {

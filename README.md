@@ -8,13 +8,13 @@
 |---|---|
 | 모바일 | Flutter/Dart Android 앱, 실기기 전체 흐름 확인 완료 |
 | 계산 API | FastAPI/Python 결정론적 계산 구현 완료 |
-| 주가 데이터 | 국내·미국 종목 검색, 미국 주가와 ECB 참고 환율을 날짜별로 결합한 원화 기준 과거 위험 분석(로컬 소스) |
+| 주가 데이터 | 로컬 소스는 Twelve Data 미국 주식 일별 시세와 ECB 참고 환율을 결합한 원화 기준 과거 위험 분석. 국내 시세는 현재 미지원 |
 | 쉬운 설명 | OpenAI-compatible LLM 연결, 검증 실패 시 정적 template 대체 |
 | 배포 | Naver Cloud + Nginx + HTTPS 운영 중 |
 | 저장 | 로그인·DB·서버 분석 이력 없음 |
 
 운영 상태는 <https://service-contest-2026-api.duckdns.org/health>에서 확인할 수 있습니다.
-미국 종목·환율 기능은 현재 저장소 소스에 반영된 상태이며 운영 서버에는 별도 배포가 필요합니다. 로컬 테스트 통과만으로 운영 반영을 뜻하지 않습니다.
+Twelve Data 연동은 현재 저장소 소스에만 반영되어 있으며 운영 서버에는 배포되지 않았습니다. 운영 서버는 여전히 이전 버전이므로 종목 분석의 데이터 출처를 혼동하지 마세요. 로컬 테스트 통과만으로 운영 반영을 뜻하지 않습니다.
 
 ## 프로젝트 구조
 
@@ -41,7 +41,16 @@ python -m venv .venv
 python -m pip install -r apps/api/requirements-dev.txt
 ```
 
-서버 설정은 프로세스 환경변수로 주입합니다. 기본 개발 설정은 Naver Finance와 정적 설명을 사용하며, OpenAI 연결 시에만 `LLM_PROVIDER`, `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`을 설정합니다. 실제 값은 Git에 넣지 않습니다.
+서버 설정은 프로세스 환경변수로 주입합니다. 종목 API 기본값은 `disabled`이며, `STOCK_DATA_PROVIDER=twelve`와 `TWELVE_DATA_API_KEY`를 함께 설정해야 미국 주식 조회가 동작합니다. Basic 요금제의 비공개 시연에만 사용하며 현재 `APP_ENV=production`에서는 Twelve 설정을 거부합니다. 공개 서버에는 접근 제한 전까지 적용하지 않습니다. OpenAI 연결 시에는 `LLM_PROVIDER`, `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`을 설정합니다. 실제 키는 Git과 모바일 코드에 넣지 않습니다.
+
+로컬 PowerShell에서 API 키를 명령 기록에 남기지 않고 한 터미널 세션에만 설정하려면 다음을 실행합니다. 키는 화면에 표시되지 않으며 같은 터미널에서 API를 시작해야 합니다.
+
+```powershell
+$tdSecureKey = Read-Host 'Twelve Data API key' -AsSecureString
+$env:TWELVE_DATA_API_KEY = [System.Net.NetworkCredential]::new('', $tdSecureKey).Password
+$env:STOCK_DATA_PROVIDER = 'twelve'
+Remove-Variable tdSecureKey
+```
 
 ## 실행
 
@@ -73,12 +82,14 @@ flutter run -d <DEVICE_ID> --dart-define=API_BASE_URL=https://service-contest-20
 
 1. 시작 화면에서 서버 연결 상태와 서비스 한계를 확인합니다.
 2. 재무정보를 입력해 월 잉여현금, 비상자금 버팀 기간, 차입 비율을 계산합니다.
-3. 고정 가격 충격 Stress Test를 비교하거나 종목과 기간을 선택해 과거 수익률·변동성·MDD를 확인합니다. 미국 종목은 최근 3개월을 조회하며 날짜별 ECB 참고 환율로 환산한 원화 기준 지표를 표시합니다.
+3. 고정 가격 충격 Stress Test를 비교하거나 미국 종목을 선택해 과거 수익률·변동성·MDD를 확인합니다. 미국 종목은 최근 3개월을 조회하며 날짜별 ECB 참고 환율로 환산한 원화 기준 지표를 표시합니다.
 4. 재무정보와 종목 MDD를 결합한 Report에서 자기자본·비상자금·생활비 대비 충격을 확인합니다.
 5. 계산된 값만 전달받은 AI 또는 검증된 template의 쉬운 설명을 확인합니다.
 
 금액 입력은 천 단위 쉼표로 표시하고, 연이율은 앱에서 `%`로 입력한 뒤 계약의 소수 단위로 전송합니다(예: `6` → `0.06`).
-미국 종목에서 Stress Test로 이동하면 주가와 원/달러 환율 충격을 따로 선택할 수 있습니다. 과거 MDD는 이미 원화 환산 결과이므로 환율 충격을 다시 더하지 않습니다. ECB 환율은 실제 환전가·수수료가 아닌 참고 기준값이고, 미국 주가의 분할·배당 조정 여부는 확인되지 않았습니다. `.github/workflows/fx-source-check.yml`은 평일에 환율 소스 가용성만 점검하며 환율 값을 Git에 저장하거나 앱으로 배포하지 않습니다.
+미국 종목에서 Stress Test로 이동하면 주가와 원/달러 환율 충격을 따로 선택할 수 있습니다. 과거 MDD는 이미 원화 환산 결과이므로 환율 충격을 다시 더하지 않습니다. ECB 환율은 실제 환전가·수수료가 아닌 참고 기준값이고, Twelve Data 일별 종가는 분할 조정·배당 제외 기준입니다. `.github/workflows/fx-source-check.yml`은 평일에 환율 소스 가용성만 점검하며 환율 값을 Git에 저장하거나 앱으로 배포하지 않습니다.
+
+Twelve Data 측 답변에 따라 Basic 계정은 비공개 심사 시연에만 사용합니다. 수상 후 공개될 수 있는 PDF에는 실제 Twelve Data 시세 및 그 파생 결과를 넣지 않고, 명확히 표시한 가상 예시값을 사용합니다. 앱 또는 종목 API를 외부에 공개 배포하려면 별도 이용 권한과 접근 통제를 확인해야 합니다.
 
 ## 품질 검사
 

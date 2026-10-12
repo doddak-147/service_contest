@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 # Flutter Android requests are not subject to browser CORS. Browser origins must
 # therefore be opted into explicitly instead of retaining the old Expo defaults.
 DEFAULT_CORS_ORIGINS: tuple[str, ...] = ()
-VALID_STOCK_DATA_PROVIDERS = frozenset({"fake", "naver"})
+VALID_STOCK_DATA_PROVIDERS = frozenset({"disabled", "fake", "twelve"})
 VALID_LLM_PROVIDERS = frozenset({"template", "openai_compatible"})
 
 
@@ -12,7 +12,8 @@ VALID_LLM_PROVIDERS = frozenset({"template", "openai_compatible"})
 class Settings:
     app_env: str
     cors_origins: tuple[str, ...]
-    stock_data_provider: str = "fake"
+    stock_data_provider: str = "disabled"
+    twelve_data_api_key: str | None = field(default=None, repr=False)
     llm_provider: str = "template"
     llm_api_url: str | None = None
     llm_api_key: str | None = field(default=None, repr=False)
@@ -21,19 +22,22 @@ class Settings:
     def __post_init__(self) -> None:
         normalized_env = self.app_env.strip().lower() or "development"
         normalized_provider = self.stock_data_provider.strip().lower()
+        normalized_twelve_key = (
+            self.twelve_data_api_key.strip() if self.twelve_data_api_key else None
+        )
         normalized_llm_provider = self.llm_provider.strip().lower()
-        normalized_llm_url = (
-            self.llm_api_url.strip() if self.llm_api_url else None
-        )
-        normalized_llm_key = (
-            self.llm_api_key.strip() if self.llm_api_key else None
-        )
-        normalized_llm_model = (
-            self.llm_model.strip() if self.llm_model else None
-        )
+        normalized_llm_url = self.llm_api_url.strip() if self.llm_api_url else None
+        normalized_llm_key = self.llm_api_key.strip() if self.llm_api_key else None
+        normalized_llm_model = self.llm_model.strip() if self.llm_model else None
         if normalized_provider not in VALID_STOCK_DATA_PROVIDERS:
             allowed = ", ".join(sorted(VALID_STOCK_DATA_PROVIDERS))
             raise ValueError(f"STOCK_DATA_PROVIDER must be one of: {allowed}")
+        if normalized_provider == "twelve" and not normalized_twelve_key:
+            raise ValueError("TWELVE_DATA_API_KEY is required for twelve")
+        if normalized_env == "production" and normalized_provider == "twelve":
+            raise ValueError(
+                "Twelve Data Basic cannot be enabled on the public production API"
+            )
         if normalized_llm_provider not in VALID_LLM_PROVIDERS:
             allowed = ", ".join(sorted(VALID_LLM_PROVIDERS))
             raise ValueError(f"LLM_PROVIDER must be one of: {allowed}")
@@ -46,6 +50,7 @@ class Settings:
             )
         object.__setattr__(self, "app_env", normalized_env)
         object.__setattr__(self, "stock_data_provider", normalized_provider)
+        object.__setattr__(self, "twelve_data_api_key", normalized_twelve_key)
         object.__setattr__(self, "llm_provider", normalized_llm_provider)
         object.__setattr__(self, "llm_api_url", normalized_llm_url)
         object.__setattr__(self, "llm_api_key", normalized_llm_key)
@@ -72,7 +77,7 @@ def load_settings() -> Settings:
     provider = (
         os.getenv(
             "STOCK_DATA_PROVIDER",
-            "fake" if normalized_app_env == "test" else "naver",
+            "fake" if normalized_app_env == "test" else "disabled",
         )
         .strip()
         .lower()
@@ -81,6 +86,7 @@ def load_settings() -> Settings:
         app_env=app_env,
         cors_origins=_parse_origins(os.getenv("CORS_ORIGINS")),
         stock_data_provider=provider,
+        twelve_data_api_key=os.getenv("TWELVE_DATA_API_KEY") or None,
         llm_provider=os.getenv("LLM_PROVIDER", "template"),
         llm_api_url=os.getenv("LLM_API_URL") or None,
         llm_api_key=os.getenv("LLM_API_KEY") or None,

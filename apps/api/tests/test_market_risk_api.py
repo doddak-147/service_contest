@@ -32,7 +32,8 @@ def test_stock_adapter_is_reused_for_fx_cache_within_one_app() -> None:
         Settings(
             app_env="test",
             cors_origins=(TEST_ORIGIN,),
-            stock_data_provider="naver",
+            stock_data_provider="twelve",
+            twelve_data_api_key="test-key",
         )
     )
     request = Request({"type": "http", "app": app})
@@ -187,3 +188,20 @@ def test_market_data_failure_uses_safe_common_error_response() -> None:
         assert body["error"]["code"] == "MARKET_DATA_UNAVAILABLE"
         assert body["error"]["message"] == ("주가 데이터 제공자와 통신할 수 없습니다.")
         assert "internal-provider-detail" not in response.text
+
+
+def test_disabled_provider_never_returns_synthetic_prices() -> None:
+    app = create_app(
+        Settings(
+            app_env="production",
+            cors_origins=(),
+            stock_data_provider="disabled",
+        )
+    )
+    with TestClient(app) as client:
+        search = client.get("/api/v1/instruments/search?q=AAPL")
+        history = client.get(
+            "/api/v1/market-risk/NASDAQ/AAPL?start_date=2026-07-01&end_date=2026-10-01"
+        )
+    assert search.status_code == 503
+    assert history.status_code == 503

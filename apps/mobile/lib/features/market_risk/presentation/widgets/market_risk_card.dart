@@ -57,8 +57,8 @@ class MarketRiskCard extends StatelessWidget {
                       border: Border.all(color: AppColors.border),
                     ),
                     child: Text(
-                      result.instrument.currency == 'USD'
-                          ? 'Naver + ECB'
+                      result.data_source == 'twelve_data+ecb_reference_fx'
+                          ? 'Twelve Data + ECB'
                           : result.data_source,
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
@@ -226,6 +226,10 @@ class MarketRiskCard extends StatelessWidget {
               children: [
                 _DataLimitText(text: '데이터 제공자: ${result.data_source}'),
                 if (result.instrument.currency == 'USD') ...[
+                  if (result.data_source == 'twelve_data+ecb_reference_fx')
+                    const _DataLimitText(
+                      text: 'Twelve Data 일별 종가는 분할 조정 기준이며 배당은 포함하지 않습니다.',
+                    ),
                   _DataLimitText(
                     text:
                         '미국 주가(USD) × ECB 기준 원/달러 환율로 원화 가격을 산출했습니다. '

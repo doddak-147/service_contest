@@ -4,7 +4,7 @@
 
 - **모바일:** Flutter + Dart(Android)
 - **API·계산:** FastAPI + Python
-- **외부 연동:** Naver Finance 국내·미국 주가 어댑터, ECB 일별 기준 환율, OpenAI-compatible LLM API
+- **외부 연동:** Twelve Data 미국 주식 일별 시세, ECB 일별 기준 환율, OpenAI-compatible LLM API
 - **테스트·정적 검사:** pytest, Ruff, Flutter test, Flutter analyze
 - **배포:** Naver Cloud Server(Ubuntu 24.04), Nginx, Uvicorn, HTTPS
 
@@ -28,7 +28,7 @@ Single FastAPI Service (Uvicorn/systemd)
   ├─ stress-test       고정 가격 충격 및 회복률 계산
   ├─ combined-report   개인×종목 결합 및 결과 구성
   └─ integrations
-       ├─ Stock API Adapter (국내·미국)
+       ├─ Stock API Adapter (Twelve Data 미국 주식, 기본 비활성화)
        ├─ ECB FX Adapter (EUR 교차 환율 → KRW/USD)
        └─ LLM Explanation Adapter
 ```
@@ -74,6 +74,7 @@ docs/API_CONTRACT.md        # 필드명과 API의 단일 기준
 6. 모바일은 숫자 Report를 먼저 표시하고 검증된 AI 설명을 부가 정보로 표시한다.
 
 외부 API 장애가 계산식을 바꾸어서는 안 된다. 시세가 없으면 시장·결합 분석을 중단하고 재무체력과 고정 하락 시나리오는 계속 제공한다. LLM 장애 시 정적 설명으로 대체한다.
+주가 어댑터는 `STOCK_DATA_PROVIDER=twelve`와 서버 환경변수 `TWELVE_DATA_API_KEY`를 함께 설정할 때만 작동한다. 기본값 `disabled`는 실제 시세 대신 가짜 값을 보여주지 않고 503을 반환한다. Twelve Data Basic에서는 미국 주식만 검색하며 API 키는 HTTP 인증 헤더로 전달한다. 과거 조회에는 일별 분할 조정 종가를 사용하고 검색·조회 결과는 제한된 시간 동안 프로세스 메모리에만 캐시한다.
 미국 종목의 고정 시나리오는 `(1 + 주가 변동률) × (1 + 원/달러 환율 변동률) - 1`을 Python에서 계산한다. 원화 환산 과거 MDD에는 환율 충격을 중복 적용하지 않는다. GitHub Actions는 ECB 소스의 최근 갱신 여부만 감시하고 환율 공급·캐시·배포 경로에는 포함하지 않는다.
 
 ## 5. LLM 안전 경계
@@ -91,7 +92,8 @@ LLM 출력은 문자열 설명이며 권위 있는 데이터 모델에 다시 �
 - 주가·LLM API key는 서버 환경변수에만 두며 모바일에는 공개 `API_BASE_URL`만 전달한다. Native Flutter 요청에는 브라우저 CORS가 필요하지 않아 운영 기본 허용 origin은 비워 둔다.
 - 외부 API에는 timeout을 적용한다. 요청 로그에는 재무 원본과 LLM payload를 남기지 않고 오류 로그에서도 secret을 마스킹한다.
 
-현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다.
+현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다. `APP_ENV=production`에서는 Twelve Data Basic 설정을 거부해 공개 운영 API로의 실수 배포를 막는다.
+현재 공개 운영 서버는 이 로컬 변경을 아직 반영하지 않았다. Twelve Data Basic의 비공개 심사 시연 범위를 넘지 않도록 공개 종목 API에 접근 제한을 마련하기 전에는 Twelve 설정으로 배포하지 않는다. 공개 PDF에는 Twelve Data 실데이터 또는 그 파생 수치를 넣지 않는다.
 
 ## 7. MVP 이후 확장
 

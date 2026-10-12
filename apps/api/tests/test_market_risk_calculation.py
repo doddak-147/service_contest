@@ -72,6 +72,16 @@ def test_us_market_risk_uses_krw_converted_prices_and_exposes_fx_date() -> None:
     assert "FX_REFERENCE_RATE" in calc.warnings
     assert "PRICE_ADJUSTMENT_UNVERIFIED" in calc.warnings
 
+    split_adjusted = calculate_market_risk(
+        instrument,
+        points,
+        date(2024, 1, 1),
+        date(2024, 1, 4),
+        "twelve_data+ecb_reference_fx",
+    )
+    assert "FX_REFERENCE_RATE" in split_adjusted.warnings
+    assert "PRICE_ADJUSTMENT_UNVERIFIED" not in split_adjusted.warnings
+
 
 def test_market_risk_calculation_with_full_recovery() -> None:
     instrument = make_instrument()

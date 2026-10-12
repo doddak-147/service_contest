@@ -177,7 +177,7 @@ ExplanationResult {
 
 `period_return_rate`, `annualized_volatility`, `max_drawdown_rate`는 `number | null`이다. 분석 불가 값은 `null`로 두고 `warnings`에 사유 코드를 넣는다.
 
-미국 주식은 `market`이 `NASDAQ | NYSE | AMEX`, `currency`가 `USD`이며 현재 일별 시세 제공 범위에 맞춰 앱에서 최근 3개월만 조회한다. 서버는 해당 날짜의 USD 종가에 ECB의 EUR 대비 KRW·USD 일별 기준 환율을 교차 계산한 원/달러 참고 환율을 곱해 원화 가격 시계열을 만든다. 기간 수익률·변동성·MDD는 이 원화 시계열 기준이다. `fx_rate_as_of`는 마지막 주가 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 휴일에는 최대 5일 전 기준 환율을 사용하고, 그보다 오래된 환율만 있으면 해당 주가 관측을 제외한다. `data_source`는 미국 종목에서 `naver_finance+ecb_reference_fx`다. `PARTIAL_PRICE_HISTORY`, `FX_REFERENCE_RATE`, `PRICE_ADJUSTMENT_UNVERIFIED` 경고는 각각 기간 부족, 실제 환전가와의 차이, 미국 주가의 기업행사 조정 여부 미확인을 뜻한다.
+미국 주식은 `market`이 `NASDAQ | NYSE | AMEX`, `currency`가 `USD`이며 앱에서 최근 3개월을 조회한다. Twelve Data Basic을 선택한 경우 검색과 과거 시세는 미국 상장 주식으로 제한한다. 국내 `KRX` 시세는 제공하지 않으며 기존 계약 필드는 유지한다. 서버는 분할 조정된 USD 일별 종가(`adjust=splits`, 배당 제외)에 ECB의 EUR 대비 KRW·USD 일별 기준 환율을 교차 계산한 원/달러 참고 환율을 곱해 원화 가격 시계열을 만든다. 기간 수익률·변동성·MDD는 이 원화 시계열 기준이다. `fx_rate_as_of`는 마지막 주가 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 휴일에는 최대 5일 전 기준 환율을 사용하고, 그보다 오래된 환율만 있으면 해당 주가 관측을 제외한다. `data_source`는 Twelve Data 이용 시 `twelve_data+ecb_reference_fx`다. `PARTIAL_PRICE_HISTORY`, `FX_REFERENCE_RATE`, `PRICE_ADJUSTMENT_UNVERIFIED` 경고는 각각 기간 부족, 실제 환전가와의 차이, 조정 여부를 확인하지 못한 제공자 데이터의 한계를 뜻한다.
 
 ### FinancialHealthResult
 
