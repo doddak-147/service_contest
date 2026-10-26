@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import date
 from decimal import Decimal
+from typing import Literal
 
 
 @dataclass(frozen=True, slots=True)
@@ -10,6 +11,7 @@ class Instrument:
     market: str
     name: str
     currency: str
+    instrument_type: Literal["stock", "etf"] = "stock"
 
 
 @dataclass(frozen=True, slots=True)

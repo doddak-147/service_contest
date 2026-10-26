@@ -255,9 +255,13 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '현재 실제 시세 분석은 미국 상장 주식만 지원합니다. '
+                    '현재 실제 시세 분석은 미국 상장 주식과 ETF를 지원합니다. '
                     '국내 종목 시세는 제공하지 않습니다.',
                   ),
+                  const SizedBox(height: 8),
+                  const Text('ETF는 지수 자체가 아니며 배당을 제외한 시장가격 변동만 분석합니다.'),
+                  const SizedBox(height: 8),
+                  const Text('한글 검색은 애플·마이크로소프트·큐큐큐 등 일부 종목만 지원합니다.'),
                 ],
               ),
             ),
@@ -279,7 +283,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: '미국 종목명·티커 (예: Apple, AAPL)',
+                      hintText: '미국 주식·ETF (예: 애플, SPY)',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -373,7 +377,10 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           item.name,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: Text('${item.symbol} · ${item.market}'),
+                        subtitle: Text(
+                          '${item.symbol} · ${item.market} · '
+                          '${item.instrument_type == 'etf' ? 'ETF' : '주식'}',
+                        ),
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => _selectInstrument(item),
                       ),

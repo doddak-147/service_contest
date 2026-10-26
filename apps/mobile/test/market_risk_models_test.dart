@@ -16,7 +16,30 @@ void main() {
       expect(instrument.market, 'KRX');
       expect(instrument.name, '삼성전자');
       expect(instrument.currency, 'KRW');
+      expect(instrument.instrument_type, 'stock');
       expect(instrument.toJson(), json);
+    });
+
+    test('ETF type is preserved in search and report DTOs', () {
+      final instrument = Instrument.fromJson({
+        'symbol': 'SPY',
+        'market': 'NYSE',
+        'name': 'SPY ETF',
+        'currency': 'USD',
+        'instrument_type': 'etf',
+      });
+      expect(instrument.instrument_type, 'etf');
+      expect(instrument.toJson()['instrument_type'], 'etf');
+      expect(
+        () => Instrument.fromJson({
+          'symbol': 'SPX',
+          'market': 'NYSE',
+          'name': 'S&P 500 Index',
+          'currency': 'USD',
+          'instrument_type': 'index',
+        }),
+        throwsFormatException,
+      );
     });
 
     test('equality works based on symbol and market', () {

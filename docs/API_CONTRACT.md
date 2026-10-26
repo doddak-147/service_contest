@@ -38,6 +38,7 @@ Instrument {
   market: string
   name: string
   currency: string
+  instrument_type?: "stock" | "etf"
 }
 
 FinancialHealthResult {
@@ -145,9 +146,12 @@ ExplanationResult {
   "symbol": "005930",
   "market": "KRX",
   "name": "삼성전자",
-  "currency": "KRW"
+  "currency": "KRW",
+  "instrument_type": "stock"
 }
 ```
+
+`instrument_type`은 미국 상장 주식과 ETF를 구분한다. 기존 요청에서 생략하면 `stock`으로 해석한다. 모바일은 구형 서버와의 호환을 위해 주식 요청에서 생략하고 ETF 요청에만 `etf`를 보낸다. 새 서버의 응답에는 항상 포함한다. ETF는 추종 지수 자체가 아니며 지수 성과와 일치한다고 가정하지 않는다.
 
 ### MarketRiskResult
 
@@ -157,7 +161,8 @@ ExplanationResult {
     "symbol": "005930",
     "market": "KRX",
     "name": "삼성전자",
-    "currency": "KRW"
+    "currency": "KRW",
+    "instrument_type": "stock"
   },
   "period_start": "2023-01-02",
   "period_end": "2025-12-30",
@@ -177,7 +182,7 @@ ExplanationResult {
 
 `period_return_rate`, `annualized_volatility`, `max_drawdown_rate`는 `number | null`이다. 분석 불가 값은 `null`로 두고 `warnings`에 사유 코드를 넣는다.
 
-미국 주식은 `market`이 `NASDAQ | NYSE | AMEX`, `currency`가 `USD`이며 앱에서 최근 3개월을 조회한다. Twelve Data Basic을 선택한 경우 검색과 과거 시세는 미국 상장 주식으로 제한한다. 국내 `KRX` 시세는 제공하지 않으며 기존 계약 필드는 유지한다. 서버는 분할 조정된 USD 일별 종가(`adjust=splits`, 배당 제외)에 ECB의 EUR 대비 KRW·USD 일별 기준 환율을 교차 계산한 원/달러 참고 환율을 곱해 원화 가격 시계열을 만든다. 기간 수익률·변동성·MDD는 이 원화 시계열 기준이다. `fx_rate_as_of`는 마지막 주가 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 휴일에는 최대 5일 전 기준 환율을 사용하고, 그보다 오래된 환율만 있으면 해당 주가 관측을 제외한다. `data_source`는 Twelve Data 이용 시 `twelve_data+ecb_reference_fx`다. `PARTIAL_PRICE_HISTORY`, `FX_REFERENCE_RATE`, `PRICE_ADJUSTMENT_UNVERIFIED` 경고는 각각 기간 부족, 실제 환전가와의 차이, 조정 여부를 확인하지 못한 제공자 데이터의 한계를 뜻한다.
+미국 상장 주식·ETF는 `market`이 `NASDAQ | NYSE | AMEX`, `currency`가 `USD`이며 앱에서 최근 3개월을 조회한다. Twelve Data Basic을 선택한 경우 검색과 과거 시세는 이 범위로 제한하고 지수 자체는 제외한다. 검색은 영어 이름·티커 외에 서버에 등록된 일부 한글 별칭도 받는다. 국내 `KRX` 시세는 제공하지 않는다. 서버는 분할 조정된 USD 일별 종가(`adjust=splits`, 배당 제외)에 ECB의 EUR 대비 KRW·USD 일별 기준 환율을 교차 계산한 원/달러 참고 환율을 곱해 원화 가격 시계열을 만든다. ETF도 같은 가격 기준으로 분석하므로 분배금 재투자 수익률이나 추종 지수 수익률로 해석하면 안 된다. 미국 거래소 현지 날짜의 당일 일봉은 마감 전 변동할 수 있으므로 제외하고 전날까지의 관측치만 분석한다. 기간 수익률·변동성·MDD는 이 원화 시계열 기준이다. `fx_rate_as_of`는 마지막 주가 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 휴일에는 최대 5일 전 기준 환율을 사용하고, 그보다 오래된 환율만 있으면 해당 주가 관측을 제외한다. `data_source`는 Twelve Data 이용 시 `twelve_data+ecb_reference_fx`다. `PARTIAL_PRICE_HISTORY`, `FX_REFERENCE_RATE`, `PRICE_ADJUSTMENT_UNVERIFIED` 경고는 각각 기간 부족, 실제 환전가와의 차이, 조정 여부를 확인하지 못한 제공자 데이터의 한계를 뜻한다.
 
 ### FinancialHealthResult
 
@@ -239,7 +244,7 @@ ExplanationResult {
 
 ### `GET /api/v1/instruments/search?q={query}`
 
-응답은 `Instrument[]`다. 빈 검색어는 `VALIDATION_ERROR`를 반환한다.
+응답은 `Instrument[]`다. 빈 검색어는 `VALIDATION_ERROR`를 반환한다. Twelve Data 사용 시 미국 상장 주식·ETF를 검색한다. 일부 주요 종목의 한글 별칭은 티커로 변환한 후 제공자 결과를 검증해 반환한다. 별칭에 없는 한글 검색어는 빈 배열을 반환하며 지수 자체는 검색 대상이 아니다.
 
 ### `GET /api/v1/market-risk/{market}/{symbol}?start_date={date}&end_date={date}`
 

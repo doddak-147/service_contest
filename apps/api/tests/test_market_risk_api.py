@@ -52,6 +52,7 @@ def test_search_instruments_returns_matching_results() -> None:
         assert any(inst["symbol"] == "005930" for inst in items)
         assert all(inst["market"] == "KRX" for inst in items)
         assert all(inst["currency"] == "KRW" for inst in items)
+        assert all(inst["instrument_type"] == "stock" for inst in items)
 
         # Search by symbol
         response_symbol = client.get("/api/v1/instruments/search?q=000660")
@@ -87,6 +88,7 @@ def test_get_market_risk_success() -> None:
         assert result["instrument"]["market"] == "KRX"
         assert result["instrument"]["name"] == "삼성전자"
         assert result["instrument"]["currency"] == "KRW"
+        assert result["instrument"]["instrument_type"] == "stock"
         assert result["period_start"] == "2024-01-01"
         assert result["period_end"] == "2024-12-31"
         assert result["data_source"] == "fake_provider"

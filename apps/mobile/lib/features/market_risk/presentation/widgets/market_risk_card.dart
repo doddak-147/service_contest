@@ -39,7 +39,7 @@ class MarketRiskCard extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${result.instrument.symbol} · ${result.instrument.market} · ${result.instrument.currency}',
+                        '${result.instrument.symbol} · ${result.instrument.market} · ${result.instrument.currency} · ${result.instrument.instrument_type == 'etf' ? 'ETF' : '주식'}',
                         style: theme.textTheme.bodyMedium,
                       ),
                     ],

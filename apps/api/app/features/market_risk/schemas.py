@@ -1,4 +1,5 @@
 from datetime import date
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -15,6 +16,7 @@ class Instrument(ContractModel):
     market: str
     name: str
     currency: str
+    instrument_type: Literal["stock", "etf"] = "stock"
 
     @classmethod
     def from_domain(cls, domain: DomainInstrument) -> "Instrument":
@@ -23,6 +25,7 @@ class Instrument(ContractModel):
             market=domain.market,
             name=domain.name,
             currency=domain.currency,
+            instrument_type=domain.instrument_type,
         )
 
     def to_domain(self) -> DomainInstrument:
@@ -31,6 +34,7 @@ class Instrument(ContractModel):
             market=self.market,
             name=self.name,
             currency=self.currency,
+            instrument_type=self.instrument_type,
         )
 
 

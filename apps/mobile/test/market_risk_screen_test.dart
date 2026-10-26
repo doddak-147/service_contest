@@ -80,6 +80,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('최근 3개월'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('최근 3개월'), findsOneWidget);
     expect(find.text('최근 1년'), findsNothing);
     await tester.scrollUntilVisible(
@@ -124,6 +129,118 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Apple (AAPL)'), findsOneWidget);
     expect(find.text('Microsoft (MSFT)'), findsOneWidget);
+  });
+
+  testWidgets('한글 종목명을 검색해 미국 종목 결과를 표시한다', (tester) async {
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/instruments/search');
+        expect(request.url.queryParameters['q'], '애플');
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode([
+              {
+                'symbol': 'AAPL',
+                'market': 'NASDAQ',
+                'name': 'Apple Inc.',
+                'currency': 'USD',
+              },
+            ]),
+          ),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MarketRiskScreen(apiClient: apiClient),
+      ),
+    );
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), '애플');
+    await tester.tap(find.text('검색'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Apple Inc.'), findsOneWidget);
+    expect(find.text('AAPL · NASDAQ · 주식'), findsOneWidget);
+  });
+
+  testWidgets('ETF 검색 결과와 위험 카드에 ETF 유형을 표시한다', (tester) async {
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        if (request.url.path == '/api/v1/instruments/search') {
+          expect(request.url.queryParameters['q'], 'SPY');
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode([
+                {
+                  'symbol': 'SPY',
+                  'market': 'NYSE',
+                  'name': 'SPY ETF',
+                  'currency': 'USD',
+                  'instrument_type': 'etf',
+                },
+              ]),
+            ),
+            200,
+          );
+        }
+        expect(request.url.path, '/api/v1/market-risk/NYSE/SPY');
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'instrument': {
+                'symbol': 'SPY',
+                'market': 'NYSE',
+                'name': 'SPY ETF',
+                'currency': 'USD',
+                'instrument_type': 'etf',
+              },
+              'period_start': '2026-07-01',
+              'period_end': '2026-09-30',
+              'data_as_of': '2026-09-30',
+              'fx_rate_as_of': '2026-09-30',
+              'data_source': 'twelve_data+ecb_reference_fx',
+              'observation_count': 63,
+              'period_return_rate': -0.1,
+              'annualized_volatility': 0.2,
+              'max_drawdown_rate': -0.2,
+              'peak_date': '2026-08-01',
+              'trough_date': '2026-09-01',
+              'recovery_date': null,
+              'warnings': ['FX_REFERENCE_RATE'],
+            }),
+          ),
+          200,
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MarketRiskScreen(apiClient: apiClient),
+      ),
+    );
+    await tester.ensureVisible(find.byType(TextField));
+    await tester.enterText(find.byType(TextField), 'SPY');
+    await tester.tap(find.text('검색'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('SPY · NYSE · ETF'), findsOneWidget);
+    await tester.tap(find.text('SPY ETF'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byType(MarketRiskCard),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('SPY · NYSE · USD · ETF'), findsOneWidget);
   });
 
   testWidgets('Selecting a popular stock fetches and displays MarketRiskCard', (
@@ -314,8 +431,15 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.widgetWithText(ListTile, 'CJ'), findsOneWidget);
 
+    await tester.ensureVisible(find.widgetWithText(ListTile, 'CJ'));
+    await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(ListTile, 'CJ'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byType(MarketRiskCard),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
 
     expect(find.byType(MarketRiskCard), findsOneWidget);
     expect(

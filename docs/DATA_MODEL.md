@@ -36,7 +36,7 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 `Instrument`는 `symbol`, `market`, `name`, `currency`로 종목을 식별한다. 같은 심볼이 다른 시장에 존재할 수 있으므로 `(market, symbol)`을 한 쌍으로 사용한다.
 
-`PricePoint`는 `date`, `adjusted_close`, 선택적 `fx_date`로 구성된다. Twelve Data 미국 종목은 분할 조정된 USD 일별 종가(배당 제외)에 ECB 참고 환율을 곱한 KRW 가격이다. `fx_date`는 미국 종목 관측에 적용한 환율 기준일이다. 외부 제공자의 필드명을 그대로 도메인에 노출하지 않는다.
+`Instrument.instrument_type`은 `stock | etf`이며 기존 입력에서 생략하면 `stock`이다. `PricePoint`는 `date`, `adjusted_close`, 선택적 `fx_date`로 구성된다. Twelve Data 미국 주식·ETF는 분할 조정된 USD 일별 종가(배당·분배금 제외)에 ECB 참고 환율을 곱한 KRW 가격이다. `fx_date`는 미국 종목 관측에 적용한 환율 기준일이다. 외부 제공자의 필드명을 그대로 도메인에 노출하지 않는다.
 
 ## 3. 계산 결과 모델
 

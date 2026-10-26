@@ -1,10 +1,12 @@
-"""Twelve Data Basic adapter for private U.S. stock demonstrations."""
+"""Twelve Data Basic adapter for private U.S. stock and ETF demonstrations."""
 
 import re
-from datetime import date
+from collections.abc import Callable
+from datetime import UTC, date, datetime, timedelta
 from decimal import Decimal, InvalidOperation
 from time import monotonic
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import httpx
 
@@ -22,7 +24,49 @@ US_MARKETS = frozenset({"NASDAQ", "NYSE", "AMEX"})
 STOCK_TYPES = frozenset(
     {"Common Stock", "American Depositary Receipt", "Depositary Receipt"}
 )
+SUPPORTED_INSTRUMENT_TYPES = STOCK_TYPES | {"ETF"}
 SYMBOL_PATTERN = re.compile(r"[A-Z][A-Z0-9.-]{0,19}")
+US_EXCHANGE_TIMEZONE = ZoneInfo("America/New_York")
+# Twelve Data provides English names and tickers. These aliases are intentionally
+# limited to instruments we can identify unambiguously; the provider still
+# verifies the actual instrument returned for each ticker.
+KOREAN_INSTRUMENT_ALIASES = {
+    "애플": "AAPL",
+    "마이크로소프트": "MSFT",
+    "마소": "MSFT",
+    "엔비디아": "NVDA",
+    "테슬라": "TSLA",
+    "아마존": "AMZN",
+    "메타": "META",
+    "넷플릭스": "NFLX",
+    "에스피와이": "SPY",
+    "큐큐큐": "QQQ",
+}
+
+
+def _last_complete_us_date(now: datetime) -> date:
+    if now.tzinfo is None:
+        raise ValueError("A timezone-aware clock is required")
+    # A daily candle can move during the U.S. trading day. Only include prior
+    # exchange-local dates, allowing the close to settle overnight.
+    return now.astimezone(US_EXCHANGE_TIMEZONE).date() - timedelta(days=1)
+
+
+def _is_korean_query(query: str) -> bool:
+    return any("\uac00" <= character <= "\ud7a3" for character in query)
+
+
+def _korean_tickers(query: str) -> tuple[str, ...]:
+    compact = "".join(query.split())
+    if len(compact) < 2:
+        return ()
+    return tuple(
+        dict.fromkeys(
+            ticker
+            for alias, ticker in KOREAN_INSTRUMENT_ALIASES.items()
+            if alias.startswith(compact)
+        )
+    )
 
 
 def _market(value: object) -> str | None:
@@ -47,13 +91,19 @@ def _instrument_from_search(item: object) -> Instrument | None:
         or market is None
         or item.get("country") not in {"United States", "US"}
         or item.get("currency") != "USD"
-        or item.get("instrument_type") not in STOCK_TYPES
+        or item.get("instrument_type") not in SUPPORTED_INSTRUMENT_TYPES
     ):
         return None
     normalized_symbol = symbol.strip().upper()
     if not SYMBOL_PATTERN.fullmatch(normalized_symbol):
         return None
-    return Instrument(normalized_symbol, market, name.strip(), "USD")
+    return Instrument(
+        normalized_symbol,
+        market,
+        name.strip(),
+        "USD",
+        "etf" if item["instrument_type"] == "ETF" else "stock",
+    )
 
 
 class TwelveStockPriceAdapter(StockPriceAdapter):
@@ -62,12 +112,14 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
         api_key: str,
         client: httpx.AsyncClient | None = None,
         fx_adapter: EcbFxAdapter | None = None,
+        clock: Callable[[], datetime] | None = None,
     ) -> None:
         if not api_key.strip():
             raise ValueError("TWELVE_DATA_API_KEY is required")
         self._api_key = api_key.strip()
         self._client = client
         self._fx_adapter = fx_adapter or EcbFxAdapter(client)
+        self._clock = clock or (lambda: datetime.now(UTC))
         self._search_cache: dict[str, tuple[float, tuple[Instrument, ...]]] = {}
         self._history_cache: dict[
             tuple[str, str, date, date],
@@ -99,27 +151,32 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
         normalized = query.strip()
         if not normalized:
             return []
-        cache_key = normalized.casefold()
+        korean_query = _is_korean_query(normalized)
+        cache_key = (
+            "".join(normalized.split()) if korean_query else normalized.casefold()
+        )
         cached = self._search_cache.get(cache_key)
         if cached is not None and monotonic() - cached[0] < 5 * 60:
             return list(cached[1])
 
-        payload = await self._get(
-            "/symbol_search", {"symbol": normalized, "outputsize": "30"}
-        )
-        raw_items = payload.get("data")
-        if not isinstance(raw_items, list):
-            raise MarketDataUnavailableError()
+        search_terms = _korean_tickers(normalized) if korean_query else (normalized,)
         results: list[Instrument] = []
         seen: set[tuple[str, str]] = set()
-        for item in raw_items:
-            instrument = _instrument_from_search(item)
-            if instrument is None:
-                continue
-            key = (instrument.market, instrument.symbol)
-            if key not in seen:
-                seen.add(key)
-                results.append(instrument)
+        for term in search_terms:
+            payload = await self._get(
+                "/symbol_search", {"symbol": term, "outputsize": "30"}
+            )
+            raw_items = payload.get("data")
+            if not isinstance(raw_items, list):
+                raise MarketDataUnavailableError()
+            for item in raw_items:
+                instrument = _instrument_from_search(item)
+                if instrument is None or (korean_query and instrument.symbol != term):
+                    continue
+                key = (instrument.market, instrument.symbol)
+                if key not in seen:
+                    seen.add(key)
+                    results.append(instrument)
         if len(self._search_cache) >= 64:
             self._search_cache.clear()
         self._search_cache[cache_key] = (monotonic(), tuple(results))
@@ -136,7 +193,13 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
         normalized_symbol = symbol.strip().upper()
         if normalized_market is None or not SYMBOL_PATTERN.fullmatch(normalized_symbol):
             raise InstrumentNotFoundError(market, symbol)
-        cache_key = (normalized_market, normalized_symbol, start_date, end_date)
+        complete_end_date = min(end_date, _last_complete_us_date(self._clock()))
+        cache_key = (
+            normalized_market,
+            normalized_symbol,
+            start_date,
+            complete_end_date,
+        )
         cached = self._history_cache.get(cache_key)
         if cached is not None and monotonic() - cached[0] < 60 * 60:
             source, instrument, points = cached[1]
@@ -150,7 +213,9 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
                 "interval": "1day",
                 "start_date": start_date.isoformat(),
                 # A date-only end_date is midnight and excludes that day's daily candle.
-                "end_date": f"{end_date.isoformat()}T23:59:59",
+                "end_date": (
+                    f"{max(start_date, complete_end_date).isoformat()}T23:59:59"
+                ),
                 "adjust": "splits",
             },
         )
@@ -165,7 +230,10 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
             or not isinstance(actual_symbol, str)
             or actual_symbol.upper() != normalized_symbol
             or meta.get("currency") != "USD"
-            or (meta.get("type") is not None and meta["type"] not in STOCK_TYPES)
+            or (
+                meta.get("type") is not None
+                and meta["type"] not in SUPPORTED_INSTRUMENT_TYPES
+            )
         ):
             raise MarketDataUnavailableError()
         name = meta.get("name")
@@ -192,6 +260,7 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
             if isinstance(name, str) and name.strip()
             else normalized_symbol,
             currency="USD",
+            instrument_type="etf" if meta.get("type") == "ETF" else "stock",
         )
         usd_prices: dict[date, Decimal] = {}
         try:
@@ -202,7 +271,7 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
                 close = Decimal(str(row["close"]))
                 if not close.is_finite() or close <= 0:
                     raise ValueError("Invalid close")
-                if start_date <= day <= end_date:
+                if start_date <= day <= complete_end_date:
                     usd_prices[day] = close
         except (KeyError, TypeError, ValueError, InvalidOperation) as exc:
             raise MarketDataUnavailableError() from exc
