@@ -18,6 +18,7 @@ class CombinedReportScreen extends StatefulWidget {
     required this.instrument,
     required this.periodStart,
     required this.periodEnd,
+    this.isExampleProfile = false,
     super.key,
   });
 
@@ -26,6 +27,7 @@ class CombinedReportScreen extends StatefulWidget {
   final Instrument instrument;
   final String periodStart;
   final String periodEnd;
+  final bool isExampleProfile;
 
   @override
   State<CombinedReportScreen> createState() => _CombinedReportScreenState();
@@ -197,6 +199,8 @@ class _CombinedReportScreenState extends State<CombinedReportScreen> {
       children: [
         CombinedReportView(
           result: result,
+          financialProfile: widget.financialProfile,
+          isExampleProfile: widget.isExampleProfile,
           explanation: _explanation,
           explanationError: _explanationError,
           isExplanationLoading: _isLoadingExplanation,

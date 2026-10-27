@@ -40,13 +40,13 @@ async def create_explanation(
     adapter: Annotated[ExplanationAdapter | None, Depends(get_explanation_adapter)],
 ) -> ExplanationResult:
     if adapter is None:
-        return build_template_explanation(payload)
+        return build_template_explanation(payload, "not_configured")
 
     try:
         draft = await adapter.generate(payload.model_dump())
         return build_llm_explanation(payload, draft)
     except LlmUnavailableError:
-        return build_template_explanation(payload)
+        return build_template_explanation(payload, "provider_unavailable")
     except UnsafeExplanationError as exc:
         logger.warning("LLM explanation rejected by safety validation: %s", exc)
-        return build_template_explanation(payload)
+        return build_template_explanation(payload, "safety_rejected")

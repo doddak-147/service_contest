@@ -11,6 +11,7 @@ ScenarioKey: TypeAlias = Literal[
     "down_40",
     "down_50",
     "historical_mdd",
+    "custom",
 ]
 
 MONEY_QUANTUM = Decimal("1")
@@ -112,7 +113,17 @@ def _validate_scenario(
     assumed_return_rate: Decimal,
 ) -> None:
     if not assumed_return_rate.is_finite():
-        raise CalculationInputError("historical_mdd_rate", "INVALID_SCENARIO_RATE")
+        field = (
+            "custom_return_rate"
+            if scenario_key == "custom"
+            else "historical_mdd_rate"
+        )
+        raise CalculationInputError(field, "INVALID_SCENARIO_RATE")
+
+    if scenario_key == "custom":
+        if not Decimal("-1") <= assumed_return_rate <= Decimal("1"):
+            raise CalculationInputError("custom_return_rate", "RATE_OUT_OF_RANGE")
+        return
 
     if scenario_key == "historical_mdd":
         if not Decimal("-1") <= assumed_return_rate <= Decimal("0"):
@@ -239,6 +250,7 @@ def calculate_stress_tests(
     profile: FinancialProfile,
     historical_mdd_rate: Decimal | None,
     exchange_rate_change_rate: Decimal = Decimal("0"),
+    custom_return_rate: Decimal | None = None,
 ) -> tuple[ScenarioCalculation, ...]:
     scenarios = [
         calculate_scenario(
@@ -257,6 +269,20 @@ def calculate_stress_tests(
                 "historical_mdd",
                 "과거 최대낙폭 재현",
                 historical_mdd_rate,
+            )
+        )
+    if custom_return_rate is not None:
+        _validate_scenario("custom", custom_return_rate)
+        sign = "+" if custom_return_rate > 0 else ""
+        percent = (custom_return_rate * 100).normalize()
+        label = f"직접 입력 ({sign}{percent:f}%)"
+        scenarios.append(
+            calculate_scenario(
+                profile,
+                "custom",
+                label,
+                custom_return_rate,
+                exchange_rate_change_rate,
             )
         )
     return tuple(scenarios)

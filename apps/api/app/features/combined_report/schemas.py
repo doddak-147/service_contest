@@ -70,6 +70,9 @@ class ExplanationInput(ContractModel):
                 raise ValueError("INVALID_SCENARIO_RATE")
             if self.market_max_drawdown_rate != self.assumed_return_rate:
                 raise ValueError("MDD_SCENARIO_MISMATCH")
+        elif self.scenario_key == "custom":
+            if not -1 <= self.assumed_return_rate <= 1:
+                raise ValueError("INVALID_SCENARIO_RATE")
         elif self.assumed_return_rate != fixed_rates[self.scenario_key]:
             raise ValueError("INVALID_SCENARIO_RATE")
 
@@ -95,3 +98,6 @@ class ExplanationResult(ContractModel):
     source: Literal["llm", "template"]
     summary: str
     caution: str
+    fallback_reason: Literal[
+        "not_configured", "provider_unavailable", "safety_rejected"
+    ] | None = None

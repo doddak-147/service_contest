@@ -67,7 +67,7 @@ MarketRiskResult {
   warnings: string[]
 }
 
-ScenarioKey = up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd
+ScenarioKey = up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd | custom
 
 ScenarioResult {
   scenario_key: ScenarioKey
@@ -223,8 +223,8 @@ ExplanationResult {
 }
 ```
 
-`scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd`다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
-고정 시나리오의 `assumed_return_rate`는 원화 기준 최종 수익률이며 `(1 + price_change_rate) × (1 + exchange_rate_change_rate) - 1`로 계산한다. `historical_mdd`는 이미 원화 기준으로 계산된 과거 낙폭이므로 두 변동률 필드는 `null`이고 환율 충격을 중복 적용하지 않는다.
+`scenario_key`는 `up_20 | flat | down_10 | down_20 | down_30 | down_40 | down_50 | historical_mdd | custom`이다. 세 개의 손실 대비 비율과 `recovery_required_rate`는 `number | null`이다.
+고정 및 `custom` 시나리오의 `assumed_return_rate`는 원화 기준 최종 수익률이며 `(1 + price_change_rate) × (1 + exchange_rate_change_rate) - 1`로 계산한다. `historical_mdd`는 이미 원화 기준으로 계산된 과거 낙폭이므로 두 변동률 필드는 `null`이고 환율 충격을 중복 적용하지 않는다.
 
 ## 3. 엔드포인트
 
@@ -268,11 +268,13 @@ ExplanationResult {
     "annual_loan_rate": 0.06
   },
   "historical_mdd_rate": -0.31,
-  "exchange_rate_change_rate": -0.1
+  "exchange_rate_change_rate": -0.1,
+  "custom_return_rate": -0.175
 }
 ```
 
-실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`가 온다. 모바일의 차입투자 Stress Test는 반환된 전체 시나리오를 선택·비교해 표시한다.
+실제 `financial_profile`에는 `FinancialProfileInput` 전체가 들어간다. `historical_mdd_rate`는 `number | null`이다. 응답은 순서가 고정된 `ScenarioResult[]`이며 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50` 다음에 MDD가 있으면 `historical_mdd`, 직접 입력이 있으면 마지막에 `custom`이 온다. 모바일의 차입투자 Stress Test는 반환된 전체 시나리오를 선택·비교해 표시한다.
+`custom_return_rate`는 선택 필드이며 생략하거나 `null`이면 직접 입력 시나리오를 반환하지 않는다. 허용 범위는 `-1..1`(-100%..+100%)이고 종목 가격의 변동 가정이다. 0인 분모·100% 손실도 기존 `ScenarioResult`의 null 및 사유 코드 규칙을 따른다.
 `exchange_rate_change_rate`는 선택 필드이며 생략 시 `0`이다. 허용 범위는 `-0.5..0.5`다. 미국 종목의 원화 환산 시나리오에서만 사용하고, 국내 종목 화면은 `0`을 전달한다. 이 값은 실시간 환율이나 미래 예측이 아닌 독립적인 가정이다. 종목 정보가 없는 이 엔드포인트 자체는 통화 종류를 검증하지 않는다.
 
 ### `POST /api/v1/combined-analyses`
@@ -346,11 +348,12 @@ LLM에 전달 가능한 최소 결과만 받는다.
 {
   "source": "llm",
   "summary": "과거 최대 하락폭을 적용한 경우의 금융 충격을 설명하는 검증된 문장",
-  "caution": "가정에 따른 결과이며 투자 추천이나 미래 예측이 아닙니다."
+  "caution": "가정에 따른 결과이며 투자 추천이나 미래 예측이 아닙니다.",
+  "fallback_reason": null
 }
 ```
 
-`source`는 `llm | template`이다. 서버는 출력에 새로운 숫자, 투자 추천, 미래 예측이 포함됐는지 검사하고 부적합하면 같은 형식의 정적 template 응답으로 대체한다.
+`source`는 `llm | template`이다. `fallback_reason`은 `null | not_configured | provider_unavailable | safety_rejected`이며, `source=llm`이면 `null`이다. 서버는 AI에 원본 금액·비율 대신 검증된 결과의 정성적 상태와 사용 가능한 자리표시자 이름만 보내고, 통과한 문장에 서버 계산값을 대입한다. 출력에 새로운 숫자, 투자 추천, 미래 예측이 포함됐는지 검사하고 부적합하면 정적 template 응답으로 대체하며 사유를 표시한다. 외부 오류 본문이나 키는 응답에 포함하지 않는다. 이전 서버의 응답에는 이 선택 필드가 없을 수 있다.
 
 ## 4. 공통 오류
 

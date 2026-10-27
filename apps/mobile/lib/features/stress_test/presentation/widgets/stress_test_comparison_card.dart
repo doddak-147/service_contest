@@ -10,7 +10,7 @@ class StressTestComparisonCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
+    final table = DecoratedBox(
       decoration: BoxDecoration(
         color: AppColors.surface,
         border: Border.all(color: AppColors.border),
@@ -37,6 +37,36 @@ class StressTestComparisonCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) => constraints.maxWidth >= 620
+          ? table
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Row(
+                  children: [
+                    Icon(
+                      Icons.swipe_left_outlined,
+                      size: 18,
+                      color: AppColors.textMuted,
+                    ),
+                    SizedBox(width: 6),
+                    Expanded(
+                      child: Text(
+                        '표를 좌우로 밀어 나머지 지표 보기',
+                        style: TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                table,
+              ],
+            ),
     );
   }
 

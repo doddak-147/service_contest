@@ -24,48 +24,35 @@ class MarketRiskCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header: Stock Info & Market Badge
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            // Long ETF names must remain readable on narrow phone screens.
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        result.instrument.name,
-                        style: theme.textTheme.titleLarge,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        '${result.instrument.symbol} · ${result.instrument.market} · ${result.instrument.currency} · ${result.instrument.instrument_type == 'etf' ? 'ETF' : '주식'}',
-                        style: theme.textTheme.bodyMedium,
-                      ),
-                    ],
-                  ),
+                Text(result.instrument.name, style: theme.textTheme.titleLarge),
+                const SizedBox(height: 4),
+                Text(
+                  '${result.instrument.symbol} · ${result.instrument.market} · ${result.instrument.currency} · ${result.instrument.instrument_type == 'etf' ? 'ETF' : '주식'}',
+                  style: theme.textTheme.bodyMedium,
                 ),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 6,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.background,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.border),
-                    ),
-                    child: Text(
-                      result.data_source == 'twelve_data+ecb_reference_fx'
-                          ? 'Twelve Data + ECB'
-                          : result.data_source,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.textMuted,
-                      ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.background,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: AppColors.border),
+                  ),
+                  child: Text(
+                    result.data_source == 'twelve_data+ecb_reference_fx'
+                        ? 'Twelve Data + ECB'
+                        : result.data_source,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textMuted,
                     ),
                   ),
                 ),

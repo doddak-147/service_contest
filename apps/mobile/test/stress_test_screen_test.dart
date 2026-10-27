@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:financial_shock_preview/features/stress_test/models/stress_test_models.dart';
 import 'package:financial_shock_preview/features/stress_test/presentation/stress_test_screen.dart';
+import 'package:financial_shock_preview/features/stress_test/presentation/widgets/leverage_comparison_card.dart';
 import 'package:financial_shock_preview/features/stress_test/presentation/widgets/stress_test_comparison_card.dart';
 import 'package:financial_shock_preview/features/stress_test/presentation/widgets/stress_test_result_card.dart';
 import 'package:financial_shock_preview/shared/api/api_client.dart';
@@ -13,6 +14,110 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  testWidgets('직접 입력한 하락률을 차입 비교 요청에도 전달하고 결과를 표시한다', (tester) async {
+    final requestedRates = <double?>[];
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        requestedRates.add(body['custom_return_rate'] as double?);
+        final scenarios = [..._scenarioResponse()];
+        scenarios.add({
+          ...scenarios[3],
+          'scenario_key': ScenarioKeys.custom,
+          'label': '직접 입력 (-17.5%)',
+          'assumed_return_rate': -0.175,
+          'investment_loss_krw': 1750000,
+        });
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(scenarios)),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(apiClient: apiClient),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('직접 입력'),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('직접 입력'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.widgetWithText(TextField, '직접 입력 변동률'),
+      '-17.5',
+    );
+    final button = find.widgetWithText(FilledButton, '금융 충격 계산하기');
+    await tester.scrollUntilVisible(
+      button,
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(requestedRates, [-0.175, -0.175]);
+    await tester.scrollUntilVisible(
+      find.text('STRESS TEST 결과'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.text('직접 입력 (-17.5%) 가정'), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byType(LeverageComparisonCard),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byType(LeverageComparisonCard), findsOneWidget);
+  });
+
+  testWidgets('직접 입력 비율의 범위를 벗어나면 요청하지 않는다', (tester) async {
+    var requestCount = 0;
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        requestCount++;
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(_scenarioResponse())),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(apiClient: apiClient),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('직접 입력'),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('직접 입력'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.widgetWithText(TextField, '직접 입력 변동률'), '-101');
+    final button = find.widgetWithText(FilledButton, '금융 충격 계산하기');
+    await tester.scrollUntilVisible(
+      button,
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+
+    expect(requestCount, 0);
+    expect(find.textContaining('직접 입력 비율은 -100%부터 +100%까지'), findsOneWidget);
+  });
+
   testWidgets('미국 종목은 환율 충격을 선택해 API로 전달한다', (tester) async {
     double? requestedFxRate;
     final apiClient = ApiClient(
@@ -126,12 +231,166 @@ void main() {
     expect(find.text('14,000,000원'), findsOneWidget);
 
     await tester.scrollUntilVisible(
-      find.byType(StressTestComparisonCard),
-      600,
+      find.text('전체 시나리오 비교'),
+      500,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('전체 시나리오 비교'), findsOneWidget);
+    expect(find.byType(LeverageComparisonCard), findsOneWidget);
+    await tester.scrollUntilVisible(
+      find.byType(StressTestComparisonCard),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('과거 최대낙폭 재현'), findsOneWidget);
+  });
+
+  testWidgets('같은 자기자본으로 차입 없음과 입력한 차입금을 별도 계산해 비교한다', (tester) async {
+    const profile = FinancialProfileInput(
+      monthly_income_krw: 3000000,
+      monthly_fixed_expenses_krw: 1500000,
+      emergency_fund_krw: 5000000,
+      existing_loan_balance_krw: 10000000,
+      monthly_debt_payment_krw: 400000,
+      planned_investment_krw: 10000000,
+      equity_amount_krw: 6000000,
+      borrowed_amount_krw: 4000000,
+      annual_loan_rate: 0.06,
+    );
+    final sentProfiles = <Map<String, dynamic>>[];
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final sentProfile = body['financial_profile'] as Map<String, dynamic>;
+        sentProfiles.add(sentProfile);
+        final scenarios = _scenarioResponse();
+        if (sentProfile['borrowed_amount_krw'] == 0) {
+          for (final scenario in scenarios) {
+            if (scenario['scenario_key'] == ScenarioKeys.down20) {
+              scenario['investment_loss_krw'] = 1200000;
+              scenario['projected_investment_value_krw'] = 4800000;
+              scenario['net_investment_equity_krw'] = 4800000;
+              scenario['estimated_monthly_interest_krw'] = 0;
+            }
+          }
+        }
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(scenarios)),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(apiClient: apiClient, initialProfile: profile),
+      ),
+    );
+    final calculateButton = find.widgetWithText(FilledButton, '금융 충격 계산하기');
+    await tester.scrollUntilVisible(
+      calculateButton,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(calculateButton);
+    await tester.pumpAndSettle();
+
+    expect(sentProfiles, hasLength(2));
+    expect(sentProfiles[0]['planned_investment_krw'], 10000000);
+    expect(sentProfiles[1]['planned_investment_krw'], 6000000);
+    expect(sentProfiles[1]['equity_amount_krw'], 6000000);
+    expect(sentProfiles[1]['borrowed_amount_krw'], 0);
+    expect(sentProfiles[1]['monthly_income_krw'], 3000000);
+    expect(sentProfiles[1]['existing_loan_balance_krw'], 10000000);
+
+    await tester.scrollUntilVisible(
+      find.byType(LeverageComparisonCard),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final comparison = find.byType(LeverageComparisonCard);
+    expect(
+      find.descendant(of: comparison, matching: find.text('차입 없음')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: comparison, matching: find.text('입력한 차입금 포함')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: comparison, matching: find.text('1,200,000원')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(of: comparison, matching: find.text('2,000,000원')),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('차입 없는 비교 요청이 실패해도 기본 Stress Test 결과는 유지한다', (tester) async {
+    const profile = FinancialProfileInput(
+      monthly_income_krw: 3000000,
+      monthly_fixed_expenses_krw: 1500000,
+      emergency_fund_krw: 5000000,
+      existing_loan_balance_krw: 10000000,
+      monthly_debt_payment_krw: 400000,
+      planned_investment_krw: 10000000,
+      equity_amount_krw: 6000000,
+      borrowed_amount_krw: 4000000,
+      annual_loan_rate: 0.06,
+    );
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        final sentProfile = body['financial_profile'] as Map<String, dynamic>;
+        if (sentProfile['borrowed_amount_krw'] == 0) {
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'error': {
+                  'code': 'SERVICE_UNAVAILABLE',
+                  'message': '잠시 사용할 수 없습니다.',
+                  'field_errors': [],
+                  'request_id': 'comparison-failed',
+                },
+              }),
+            ),
+            503,
+            headers: {'content-type': 'application/json'},
+          );
+        }
+        return http.Response.bytes(
+          utf8.encode(jsonEncode(_scenarioResponse())),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(apiClient: apiClient, initialProfile: profile),
+      ),
+    );
+    final button = find.widgetWithText(FilledButton, '금융 충격 계산하기');
+    await tester.scrollUntilVisible(
+      button,
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.textContaining('차입 없는 경우의 계산 결과'),
+      500,
+      scrollable: find.byType(Scrollable).first,
+    );
+    expect(find.byType(StressTestResultCard), findsOneWidget);
+    expect(find.byType(LeverageComparisonCard), findsNothing);
   });
 
   testWidgets('100% 손실과 0인 분모의 계산 불가 사유를 설명한다', (tester) async {
@@ -179,6 +438,24 @@ void main() {
     await tester.tap(find.text('계산 근거 보기'));
     await tester.pumpAndSettle();
     expect(find.textContaining('예상 손실 = 투자 예정금액'), findsOneWidget);
+  });
+
+  testWidgets('좁은 화면의 시나리오 표는 가로 스크롤을 안내한다', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final results = _scenarioResponse()
+        .map(ScenarioResult.fromJson)
+        .toList(growable: false);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(body: StressTestComparisonCard(results: results)),
+      ),
+    );
+    expect(find.text('표를 좌우로 밀어 나머지 지표 보기'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
   testWidgets('입력 수정 후 늦게 도착한 이전 결과를 표시하지 않는다', (tester) async {

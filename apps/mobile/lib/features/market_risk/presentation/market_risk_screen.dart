@@ -25,12 +25,14 @@ class MarketRiskScreen extends StatefulWidget {
     required this.apiClient,
     this.initialInstrument,
     this.financialProfile,
+    this.isExampleProfile = false,
     super.key,
   });
 
   final ApiClient apiClient;
   final Instrument? initialInstrument;
   final FinancialProfileInput? financialProfile;
+  final bool isExampleProfile;
 
   @override
   State<MarketRiskScreen> createState() => _MarketRiskScreenState();
@@ -64,6 +66,20 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
       market: 'NASDAQ',
       name: 'Tesla',
       currency: 'USD',
+    ),
+    Instrument(
+      symbol: 'SPY',
+      market: 'NYSE',
+      name: 'SPY ETF',
+      currency: 'USD',
+      instrument_type: 'etf',
+    ),
+    Instrument(
+      symbol: 'QQQ',
+      market: 'NASDAQ',
+      name: 'QQQ ETF',
+      currency: 'USD',
+      instrument_type: 'etf',
     ),
   ];
 
@@ -328,7 +344,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
 
             // Popular Quick Chips
             const Text(
-              '주요 관심 종목',
+              '주식·ETF 빠른 선택',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -342,7 +358,11 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
               children: _popularInstruments.map((inst) {
                 final isSelected = _selectedInstrument?.symbol == inst.symbol;
                 return ChoiceChip(
-                  label: Text('${inst.name} (${inst.symbol})'),
+                  label: Text(
+                    inst.instrument_type == 'etf'
+                        ? '${inst.symbol} · ETF'
+                        : '${inst.name} (${inst.symbol})',
+                  ),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
@@ -506,6 +526,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                         builder: (_) => CombinedReportScreen(
                           apiClient: widget.apiClient,
                           financialProfile: widget.financialProfile!,
+                          isExampleProfile: widget.isExampleProfile,
                           instrument: result.instrument,
                           periodStart: result.period_start,
                           periodEnd: result.period_end,
@@ -527,6 +548,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                         builder: (_) => StressTestScreen(
                           apiClient: widget.apiClient,
                           initialProfile: widget.financialProfile,
+                          isExampleProfile: widget.isExampleProfile,
                           historicalMddRate: result.max_drawdown_rate,
                           historicalMddSource: result.instrument.name,
                           instrumentCurrency: result.instrument.currency,

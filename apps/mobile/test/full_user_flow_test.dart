@@ -46,12 +46,11 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('연결됨'), findsOneWidget);
 
-    await tester.drag(find.byType(ListView), const Offset(0, -300));
-    await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('개인 금융체력 분석하기'));
+    await tester.ensureVisible(find.text('가상 예시로 체험'));
     await tester.pump();
-    await tester.tap(find.text('개인 금융체력 분석하기'));
+    await tester.tap(find.text('가상 예시로 체험'));
     await tester.pumpAndSettle();
+    expect(find.text('가상 재무 예시'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('금융체력 계산하기'),
       500,

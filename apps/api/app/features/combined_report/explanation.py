@@ -1,5 +1,6 @@
 import re
 from decimal import ROUND_HALF_UP, Decimal
+from typing import Literal
 
 from app.features.combined_report.schemas import (
     ExplanationInput,
@@ -12,7 +13,18 @@ CAUTION = (
 )
 PLACEHOLDER_PATTERN = re.compile(r"\{\{([a-z_]+)\}\}")
 DIGIT_PATTERN = re.compile(r"[0-9０-９]")
-RAW_NUMBER_UNIT_PATTERN = re.compile(r"(?:%|원|퍼센트|개월|배)")
+RAW_NUMBER_UNIT_PATTERN = re.compile(
+    r"(?:%|[영공일이삼사오육칠팔구십백천만억조한두세네반]+\s*(?:원|퍼센트|개월|배))"
+)
+PLACEHOLDER_CONTEXT = {
+    "loss_to_equity_ratio": "자기자본 대비",
+    "loss_to_emergency_fund_ratio": "비상자금 대비",
+    "loss_to_monthly_fixed_expenses": "월 고정지출",
+    "net_investment_equity_krw": "손실 후 순투자지분",
+    "estimated_monthly_interest_krw": "월 이자",
+    "market_max_drawdown_rate": "과거 최대낙폭",
+}
+UNSUPPORTED_COMPARISONS = ("초과", "미만", "이상", "이하")
 FORBIDDEN_PHRASES = (
     "매수",
     "매도",
@@ -102,7 +114,10 @@ def _render(template: str, payload: ExplanationInput) -> str:
     )
 
 
-def build_template_explanation(payload: ExplanationInput) -> ExplanationResult:
+def build_template_explanation(
+    payload: ExplanationInput,
+    reason: Literal["not_configured", "provider_unavailable", "safety_rejected"],
+) -> ExplanationResult:
     if payload.scenario_key == "historical_mdd":
         template = (
             "과거 최대낙폭과 같은 가격 충격을 가정하면 예상 투자손실은 "
@@ -120,6 +135,7 @@ def build_template_explanation(payload: ExplanationInput) -> ExplanationResult:
         source="template",
         summary=_render(template, payload),
         caution=CAUTION,
+        fallback_reason=reason,
     )
 
 
@@ -134,13 +150,20 @@ def build_llm_explanation(
         raise UnsafeExplanationError("NEW_NUMBER")
     if RAW_NUMBER_UNIT_PATTERN.search(summary):
         raise UnsafeExplanationError("NEW_NUMBER")
+    if any(phrase in summary for phrase in UNSUPPORTED_COMPARISONS):
+        raise UnsafeExplanationError("UNSUPPORTED_COMPARISON")
     if any(phrase in summary for phrase in FORBIDDEN_PHRASES):
         raise UnsafeExplanationError("PROHIBITED_ADVICE")
 
-    placeholders = PLACEHOLDER_PATTERN.findall(summary)
+    placeholder_matches = tuple(PLACEHOLDER_PATTERN.finditer(summary))
+    placeholders = [match.group(1) for match in placeholder_matches]
     allowed = set(_replacement_values(payload))
     if not placeholders or any(value not in allowed for value in placeholders):
         raise UnsafeExplanationError("INVALID_PLACEHOLDER")
+    for match in placeholder_matches:
+        context = PLACEHOLDER_CONTEXT.get(match.group(1))
+        if context is not None and context not in summary[max(0, match.start() - 48) : match.start()]:
+            raise UnsafeExplanationError("INCORRECT_PLACEHOLDER_CONTEXT")
 
     rendered = _render(summary, payload)
     if "{{" in rendered or "}}" in rendered:

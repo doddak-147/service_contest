@@ -129,6 +129,74 @@ void main() {
     expect(find.byType(TextField), findsOneWidget);
     expect(find.text('Apple (AAPL)'), findsOneWidget);
     expect(find.text('Microsoft (MSFT)'), findsOneWidget);
+    expect(find.text('SPY · ETF'), findsOneWidget);
+    expect(find.text('QQQ · ETF'), findsOneWidget);
+  });
+
+  testWidgets('QQQ 빠른 선택 후 긴 ETF 이름을 생략하지 않고 표시한다', (tester) async {
+    const fullName = 'Invesco QQQ Trust, Series 1';
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        expect(request.url.path, '/api/v1/market-risk/NASDAQ/QQQ');
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'instrument': {
+                'symbol': 'QQQ',
+                'market': 'NASDAQ',
+                'name': fullName,
+                'currency': 'USD',
+                'instrument_type': 'etf',
+              },
+              'period_start': '2026-07-01',
+              'period_end': '2026-09-30',
+              'data_as_of': '2026-09-30',
+              'fx_rate_as_of': '2026-09-30',
+              'data_source': 'twelve_data+ecb_reference_fx',
+              'observation_count': 63,
+              'period_return_rate': -0.1,
+              'annualized_volatility': 0.2,
+              'max_drawdown_rate': -0.2,
+              'peak_date': '2026-08-01',
+              'trough_date': '2026-09-01',
+              'recovery_date': null,
+              'warnings': ['FX_REFERENCE_RATE'],
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: MarketRiskScreen(apiClient: apiClient),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('QQQ · ETF'),
+      250,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('QQQ · ETF'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.byType(MarketRiskCard),
+      400,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final title = tester.widget<Text>(
+      find.descendant(
+        of: find.byType(MarketRiskCard),
+        matching: find.text(fullName),
+      ),
+    );
+    expect(title.overflow, isNull);
+    expect(title.maxLines, isNull);
+    expect(find.text('QQQ · NASDAQ · USD · ETF'), findsOneWidget);
   });
 
   testWidgets('한글 종목명을 검색해 미국 종목 결과를 표시한다', (tester) async {

@@ -129,21 +129,31 @@ class ExplanationResult {
     required this.source,
     required this.summary,
     required this.caution,
+    this.fallback_reason,
   });
 
   final String source;
   final String summary;
   final String caution;
+  final String? fallback_reason;
 
   factory ExplanationResult.fromJson(Map<String, dynamic> json) {
     final source = _readString(json, 'source');
     if (source != 'llm' && source != 'template') {
       throw const FormatException('지원하지 않는 explanation source입니다.');
     }
+    final reason = json['fallback_reason'];
+    if (reason != null &&
+        reason != 'not_configured' &&
+        reason != 'provider_unavailable' &&
+        reason != 'safety_rejected') {
+      throw const FormatException('지원하지 않는 fallback_reason입니다.');
+    }
     return ExplanationResult(
       source: source,
       summary: _readString(json, 'summary'),
       caution: _readString(json, 'caution'),
+      fallback_reason: reason as String?,
     );
   }
 }

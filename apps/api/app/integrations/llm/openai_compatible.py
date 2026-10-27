@@ -36,15 +36,59 @@ SUMMARY_RESPONSE_FORMAT = {
     },
 }
 
+EXPLANATION_PLACEHOLDERS = (
+    "assumed_return_rate",
+    "investment_loss_krw",
+    "loss_to_equity_ratio",
+    "loss_to_emergency_fund_ratio",
+    "loss_to_monthly_fixed_expenses",
+    "net_investment_equity_krw",
+    "estimated_monthly_interest_krw",
+    "market_max_drawdown_rate",
+)
+
 SYSTEM_PROMPT = """당신은 금융위험 계산 결과를 쉬운 한국어로 설명한다.
 투자 추천, 매수·매도 판단, 투자 가능 여부, 미래 가격 예측을 절대 작성하지 않는다.
-입력 숫자를 직접 쓰거나 새로 계산하지 말고 아래 허용 자리표시자만 사용한다.
-허용 자리표시자:
-{{assumed_return_rate}}, {{investment_loss_krw}}, {{loss_to_equity_ratio}},
-{{loss_to_emergency_fund_ratio}}, {{loss_to_monthly_fixed_expenses}},
-{{net_investment_equity_krw}}, {{estimated_monthly_interest_krw}},
-{{market_max_drawdown_rate}}.
+입력에는 실제 숫자가 없으며, 사용 가능한 자리표시자 이름만 있다.
+summary에는 반드시 사용 가능한 자리표시자를 포함한다.
+숫자와 수량 단위를 직접 쓰지 않는다.
+실제 금액·비율은 서버가 자리표시자를 나중에 바꾼다. 새 숫자나 계산을 만들지 않는다.
+자리표시자의 의미를 바꾸지 않는다. 특히 손실 비율의 분모를 바꾸지 않는다.
+{{loss_to_equity_ratio}} 앞에는 반드시 '자기자본 대비'를 쓴다.
+{{loss_to_emergency_fund_ratio}} 앞에는 반드시 '비상자금 대비'를 쓴다.
+{{loss_to_monthly_fixed_expenses}} 앞에는 반드시 '월 고정지출'을 쓴다.
+{{net_investment_equity_krw}} 앞에는 반드시 '손실 후 순투자지분'을 쓴다.
+{{estimated_monthly_interest_krw}} 앞에는 반드시 '월 이자'를 쓴다.
+{{market_max_drawdown_rate}} 앞에는 반드시 '과거 최대낙폭'을 쓴다.
+값이 다른 기준보다 크거나 작은지 비교하지 않는다.
+올바른 예: 가격 변화를 가정하면 예상 손실은 {{investment_loss_krw}}입니다.
 두 문장 이내의 summary만 가진 JSON object를 반환한다."""
+
+
+def _prompt_context(payload: dict[str, object]) -> dict[str, object]:
+    rate = payload.get("assumed_return_rate")
+    scenario_key = payload.get("scenario_key")
+    if scenario_key == "historical_mdd":
+        scenario_type = "historical_decline"
+    elif isinstance(rate, (int, float)) and rate > 0:
+        scenario_type = "hypothetical_increase"
+    elif isinstance(rate, (int, float)) and rate < 0:
+        scenario_type = "hypothetical_decline"
+    else:
+        scenario_type = "hypothetical_flat"
+
+    loss = payload.get("investment_loss_krw")
+    equity = payload.get("net_investment_equity_krw")
+    interest = payload.get("estimated_monthly_interest_krw")
+    return {
+        "scenario_type": scenario_type,
+        "loss_exists": isinstance(loss, int) and loss > 0,
+        "equity_exhausted": isinstance(equity, int) and equity < 0,
+        "interest_applies": isinstance(interest, int) and interest > 0,
+        "available_placeholders": [
+            name for name in EXPLANATION_PLACEHOLDERS if payload.get(name) is not None
+        ],
+    }
 
 
 class OpenAICompatibleExplanationAdapter(ExplanationAdapter):
@@ -64,13 +108,12 @@ class OpenAICompatibleExplanationAdapter(ExplanationAdapter):
     async def generate(self, payload: dict[str, object]) -> ExplanationDraft:
         request_body = {
             "model": self._model,
-            "reasoning_effort": "none",
             "response_format": SUMMARY_RESPONSE_FORMAT,
             "messages": [
                 {"role": "system", "content": SYSTEM_PROMPT},
                 {
                     "role": "user",
-                    "content": json.dumps(payload, ensure_ascii=False),
+                    "content": json.dumps(_prompt_context(payload), ensure_ascii=False),
                 },
             ],
         }
