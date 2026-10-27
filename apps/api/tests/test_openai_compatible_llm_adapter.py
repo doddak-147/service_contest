@@ -16,19 +16,32 @@ def test_adapter_sends_minimal_payload_and_reads_json_summary() -> None:
         body = json.loads(request.content)
         assert set(body) == {
             "model",
-            "reasoning_effort",
             "response_format",
             "messages",
         }
         assert body["model"] == "test-model"
-        assert body["reasoning_effort"] == "none"
         assert body["response_format"]["type"] == "json_schema"
         schema = body["response_format"]["json_schema"]
         assert schema["strict"] is True
         assert schema["schema"]["required"] == ["summary"]
         assert schema["schema"]["additionalProperties"] is False
-        user_payload = json.loads(body["messages"][1]["content"])
-        assert user_payload == {"scenario_key": "down_20"}
+        user_content = body["messages"][1]["content"]
+        user_payload = json.loads(user_content)
+        assert user_payload == {
+            "scenario_type": "hypothetical_decline",
+            "loss_exists": True,
+            "equity_exhausted": False,
+            "interest_applies": True,
+            "available_placeholders": [
+                "assumed_return_rate",
+                "investment_loss_krw",
+                "loss_to_equity_ratio",
+                "net_investment_equity_krw",
+                "estimated_monthly_interest_krw",
+            ],
+        }
+        assert "3000000" not in user_content
+        assert "-0.2" not in user_content
         return httpx.Response(
             200,
             json={
@@ -53,7 +66,16 @@ def test_adapter_sends_minimal_payload_and_reads_json_summary() -> None:
                 model="test-model",
                 client=client,
             )
-            draft = await adapter.generate({"scenario_key": "down_20"})
+            draft = await adapter.generate(
+                {
+                    "scenario_key": "down_20",
+                    "assumed_return_rate": -0.2,
+                    "investment_loss_krw": 3_000_000,
+                    "loss_to_equity_ratio": 0.6,
+                    "net_investment_equity_krw": 2_000_000,
+                    "estimated_monthly_interest_krw": 50_000,
+                }
+            )
 
         assert draft.summary == "손실은 {{investment_loss_krw}}입니다."
 

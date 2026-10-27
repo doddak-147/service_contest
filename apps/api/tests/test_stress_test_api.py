@@ -83,6 +83,27 @@ def test_exchange_shock_response_and_invalid_range() -> None:
     ]
 
 
+def test_custom_return_rate_is_optional_and_validated() -> None:
+    request = valid_request()
+    request["custom_return_rate"] = -0.175
+    with make_client() as client:
+        response = client.post("/api/v1/stress-tests/analyze", json=request)
+
+    assert response.status_code == 200
+    custom = response.json()[-1]
+    assert custom["scenario_key"] == "custom"
+    assert custom["price_change_rate"] == -0.175
+    assert custom["investment_loss_krw"] == 2_625_000
+
+    request["custom_return_rate"] = -1.01
+    with make_client() as client:
+        invalid = client.post("/api/v1/stress-tests/analyze", json=request)
+    assert invalid.status_code == 422
+    assert invalid.json()["error"]["field_errors"] == [
+        {"field": "custom_return_rate", "reason": "RATE_OUT_OF_RANGE"}
+    ]
+
+
 @pytest.mark.parametrize(
     ("field", "value", "expected_reason"),
     [

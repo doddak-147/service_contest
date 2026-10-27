@@ -107,6 +107,33 @@ def test_us_combined_report_uses_krw_mdd_once_and_keeps_fx_metadata() -> None:
     assert "FX_REFERENCE_RATE" in body["warnings"]
 
 
+class EtfKrwAdapter(UsKrwStockAdapter):
+    async def get_price_history(
+        self, market: str, symbol: str, start_date: date, end_date: date
+    ) -> tuple[str, Instrument, list[PricePoint]]:
+        source, _instrument, points = await super().get_price_history(
+            market, symbol, start_date, end_date
+        )
+        return source, Instrument("SPY", "NYSE", "SPY ETF", "USD", "etf"), points
+
+
+def test_etf_combined_report_preserves_type_and_uses_krw_mdd() -> None:
+    request = valid_request("SPY", "SPY ETF")
+    request["instrument"]["market"] = "NYSE"
+    request["instrument"]["currency"] = "USD"
+    request["instrument"]["instrument_type"] = "etf"
+    request["period_end"] = "2025-01-31"
+
+    with make_client(EtfKrwAdapter()) as client:
+        response = client.post("/api/v1/combined-analyses", json=request)
+
+    assert response.status_code == 200
+    body = response.json()
+    assert body["market_risk"]["instrument"]["instrument_type"] == "etf"
+    assert body["market_risk"]["max_drawdown_rate"] == -0.2
+    assert body["mdd_impact"]["investment_loss_krw"] == 2_000_000
+
+
 class UnavailableStockPriceAdapter(StockPriceAdapter):
     async def search_instruments(self, query: str) -> list[Instrument]:
         return []

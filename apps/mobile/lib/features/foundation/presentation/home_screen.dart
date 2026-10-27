@@ -22,29 +22,15 @@ class HomeScreen extends StatelessWidget {
           children: [
             const _HeroBanner(),
             const SizedBox(height: 16),
+            _QuickStartCard(apiClient: apiClient),
+            const SizedBox(height: 16),
             ServerStatusCard(apiClient: apiClient),
-            const SizedBox(height: 28),
+            const SizedBox(height: 24),
             const _SectionHeading(
-              title: '분석 시작',
-              description: '궁금한 금융 충격부터 차례로 확인해 보세요.',
+              title: '바로 살펴보기',
+              description: '필요한 분석을 따로 확인할 수도 있습니다.',
             ),
             const SizedBox(height: 14),
-            _FeatureActionCard(
-              eyebrow: 'STEP 1 · 내 재무상태',
-              title: '개인 금융체력 분석하기',
-              description: '월 잉여자금과 비상자금으로 손실 대응력을 확인합니다.',
-              icon: Icons.account_balance_wallet_outlined,
-              color: AppColors.primary,
-              backgroundColor: AppColors.primarySoft,
-              onTap: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => FinancialHealthScreen(apiClient: apiClient),
-                  ),
-                );
-              },
-            ),
-            const SizedBox(height: 12),
             _FeatureActionCard(
               eyebrow: 'STRESS TEST · 가정 시나리오',
               title: '차입투자 Stress Test 시작하기',
@@ -85,6 +71,62 @@ class HomeScreen extends StatelessWidget {
               },
               icon: const Icon(Icons.info_outline_rounded, size: 19),
               label: const Text('서비스 원칙 보기'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _QuickStartCard extends StatelessWidget {
+  const _QuickStartCard({required this.apiClient});
+
+  final ApiClient apiClient;
+
+  void _openFinancialHealth(BuildContext context, FinancialInputMode mode) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) =>
+            FinancialHealthScreen(apiClient: apiClient, inputMode: mode),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.border),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text('내 손실 충격 살펴보기', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 10),
+            const Text('① 재무상태 입력  →  ② 종목 선택  →  ③ 결합 결과'),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: () =>
+                  _openFinancialHealth(context, FinancialInputMode.example),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('가상 예시로 체험'),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton.icon(
+              onPressed: () =>
+                  _openFinancialHealth(context, FinancialInputMode.personal),
+              icon: const Icon(Icons.edit_outlined),
+              label: const Text('내 값으로 시작'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '예시는 재무 입력만 가상입니다. 종목을 선택하면 실제 과거 시세가 사용될 수 있습니다.',
+              style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
         ),

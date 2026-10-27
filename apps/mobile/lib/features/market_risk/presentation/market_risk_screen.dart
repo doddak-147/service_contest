@@ -25,12 +25,14 @@ class MarketRiskScreen extends StatefulWidget {
     required this.apiClient,
     this.initialInstrument,
     this.financialProfile,
+    this.isExampleProfile = false,
     super.key,
   });
 
   final ApiClient apiClient;
   final Instrument? initialInstrument;
   final FinancialProfileInput? financialProfile;
+  final bool isExampleProfile;
 
   @override
   State<MarketRiskScreen> createState() => _MarketRiskScreenState();
@@ -41,16 +43,44 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
   final _searchController = TextEditingController();
 
   static const _popularInstruments = [
-    Instrument(symbol: '005930', market: 'KRX', name: '삼성전자', currency: 'KRW'),
     Instrument(
-      symbol: '000660',
-      market: 'KRX',
-      name: 'SK하이닉스',
-      currency: 'KRW',
+      symbol: 'AAPL',
+      market: 'NASDAQ',
+      name: 'Apple',
+      currency: 'USD',
     ),
-    Instrument(symbol: '035420', market: 'KRX', name: 'NAVER', currency: 'KRW'),
-    Instrument(symbol: '005380', market: 'KRX', name: '현대차', currency: 'KRW'),
-    Instrument(symbol: '035720', market: 'KRX', name: '카카오', currency: 'KRW'),
+    Instrument(
+      symbol: 'MSFT',
+      market: 'NASDAQ',
+      name: 'Microsoft',
+      currency: 'USD',
+    ),
+    Instrument(
+      symbol: 'NVDA',
+      market: 'NASDAQ',
+      name: 'NVIDIA',
+      currency: 'USD',
+    ),
+    Instrument(
+      symbol: 'TSLA',
+      market: 'NASDAQ',
+      name: 'Tesla',
+      currency: 'USD',
+    ),
+    Instrument(
+      symbol: 'SPY',
+      market: 'NYSE',
+      name: 'SPY ETF',
+      currency: 'USD',
+      instrument_type: 'etf',
+    ),
+    Instrument(
+      symbol: 'QQQ',
+      market: 'NASDAQ',
+      name: 'QQQ ETF',
+      currency: 'USD',
+      instrument_type: 'etf',
+    ),
   ];
 
   Instrument? _selectedInstrument;
@@ -239,6 +269,15 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                     '과거에 겪었던 최악의 위험 수준을 파악하기 위함입니다.',
                     style: theme.textTheme.bodyMedium,
                   ),
+                  const SizedBox(height: 8),
+                  const Text(
+                    '현재 실제 시세 분석은 미국 상장 주식과 ETF를 지원합니다. '
+                    '국내 종목 시세는 제공하지 않습니다.',
+                  ),
+                  const SizedBox(height: 8),
+                  const Text('ETF는 지수 자체가 아니며 배당을 제외한 시장가격 변동만 분석합니다.'),
+                  const SizedBox(height: 8),
+                  const Text('한글 검색은 애플·마이크로소프트·큐큐큐 등 일부 종목만 지원합니다.'),
                 ],
               ),
             ),
@@ -260,7 +299,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   child: TextField(
                     controller: _searchController,
                     decoration: InputDecoration(
-                      hintText: '종목명·코드 (예: 삼성전자, 005930, AAPL)',
+                      hintText: '미국 주식·ETF (예: 애플, SPY)',
                       prefixIcon: const Icon(Icons.search),
                       suffixIcon: _searchController.text.isNotEmpty
                           ? IconButton(
@@ -305,7 +344,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
 
             // Popular Quick Chips
             const Text(
-              '주요 관심 종목',
+              '주식·ETF 빠른 선택',
               style: TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
@@ -319,7 +358,11 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
               children: _popularInstruments.map((inst) {
                 final isSelected = _selectedInstrument?.symbol == inst.symbol;
                 return ChoiceChip(
-                  label: Text('${inst.name} (${inst.symbol})'),
+                  label: Text(
+                    inst.instrument_type == 'etf'
+                        ? '${inst.symbol} · ETF'
+                        : '${inst.name} (${inst.symbol})',
+                  ),
                   selected: isSelected,
                   onSelected: (selected) {
                     if (selected) {
@@ -354,7 +397,10 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                           item.name,
                           style: const TextStyle(fontWeight: FontWeight.w700),
                         ),
-                        subtitle: Text('${item.symbol} · ${item.market}'),
+                        subtitle: Text(
+                          '${item.symbol} · ${item.market} · '
+                          '${item.instrument_type == 'etf' ? 'ETF' : '주식'}',
+                        ),
                         trailing: const Icon(Icons.chevron_right, size: 20),
                         onTap: () => _selectInstrument(item),
                       ),
@@ -404,7 +450,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
               const SizedBox(height: 20),
               if (_selectedInstrument!.currency == 'USD') ...[
                 const Text(
-                  '미국 종목은 현재 제공되는 최근 일별 시세 범위에서 원/달러 기준환율을 결합해 분석합니다. '
+                  '미국 종목은 최근 3개월의 일별 시세와 원/달러 기준환율을 결합해 분석합니다. '
                   '긴 기간의 위험을 대표하지 않습니다.',
                 ),
                 const SizedBox(height: 12),
@@ -480,6 +526,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                         builder: (_) => CombinedReportScreen(
                           apiClient: widget.apiClient,
                           financialProfile: widget.financialProfile!,
+                          isExampleProfile: widget.isExampleProfile,
                           instrument: result.instrument,
                           periodStart: result.period_start,
                           periodEnd: result.period_end,
@@ -501,6 +548,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                         builder: (_) => StressTestScreen(
                           apiClient: widget.apiClient,
                           initialProfile: widget.financialProfile,
+                          isExampleProfile: widget.isExampleProfile,
                           historicalMddRate: result.max_drawdown_rate,
                           historicalMddSource: result.instrument.name,
                           instrumentCurrency: result.instrument.currency,

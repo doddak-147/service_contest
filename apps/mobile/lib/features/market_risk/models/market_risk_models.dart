@@ -7,19 +7,26 @@ class Instrument {
     required this.market,
     required this.name,
     required this.currency,
+    this.instrument_type = 'stock',
   });
 
   final String symbol;
   final String market;
   final String name;
   final String currency;
+  final String instrument_type;
 
   factory Instrument.fromJson(Map<String, dynamic> json) {
+    final instrumentType = json['instrument_type'] ?? 'stock';
+    if (instrumentType != 'stock' && instrumentType != 'etf') {
+      throw const FormatException('instrument_type 필드가 stock | etf가 아닙니다.');
+    }
     return Instrument(
       symbol: _readString(json, 'symbol'),
       market: _readString(json, 'market'),
       name: _readString(json, 'name'),
       currency: _readString(json, 'currency'),
+      instrument_type: instrumentType as String,
     );
   }
 
@@ -29,6 +36,7 @@ class Instrument {
       'market': market,
       'name': name,
       'currency': currency,
+      if (instrument_type == 'etf') 'instrument_type': instrument_type,
     };
   }
 

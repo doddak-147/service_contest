@@ -22,11 +22,13 @@ Dart는 `dart format`을 적용하고 클래스·Widget은 `PascalCase`, 함수�
 
 새 dependency는 표준 기능이나 기존 dependency로 해결할 수 없을 때만 추가하고 PR에 이유를 적는다. 다른 feature 영역을 대규모로 refactoring하지 않는다.
 
-미국 종목의 과거 위험은 서버에서 날짜별 USD 종가와 ECB 참고 환율을 결합한 원화 가격으로 계산한다. 환율 기준일과 제공 범위를 숨기지 않는다. 고정 Stress Test의 주가·환율 충격만 결합하고 원화 기준 과거 MDD에는 환율 충격을 중복 적용하지 않는다. GitHub Actions는 환율 소스 감시에만 사용하며 계산값을 Git에 저장하지 않는다.
+미국 종목의 과거 위험은 서버에서 Twelve Data의 분할 조정 일별 USD 종가(배당 제외)와 ECB 참고 환율을 결합한 원화 가격으로 계산한다. Twelve Data Basic 사용 중에는 국내 종목 실제 시세를 제공하지 않는다. 환율 기준일과 제공 범위를 숨기지 않는다. 고정 Stress Test의 주가·환율 충격만 결합하고 원화 기준 과거 MDD에는 환율 충격을 중복 적용하지 않는다. GitHub Actions는 환율 소스 감시에만 사용하며 계산값을 Git에 저장하지 않는다.
 
 ## AI·보안 규칙
 
 LLM에는 이름, 재무 원본 전체, 인증정보를 보내지 않는다. 검증 완료된 최소 계산 결과만 전달하며 LLM이 숫자를 생성·수정하거나 투자 행동을 권고하게 하지 않는다. 외부 주가/LLM API 키는 FastAPI 서버 환경변수로만 주입하고 모바일 코드, 로그, Git에 넣지 않는다.
+
+Twelve Data Basic은 비공개 심사 시연 범위에서만 사용한다. 공개 API에 종목 데이터를 노출하거나 공개 PDF에 Twelve Data 실데이터 및 파생 수치를 넣지 않는다. 공개 자료에는 명확히 표시한 가상 예시값을 사용하며, 외부 공개가 필요하면 제공자의 별도 이용 권한을 먼저 확인한다.
 
 운영 API는 Naver Cloud의 단일 FastAPI 서버에 배포되어 있다. 배포 주소·구조가 바뀌면 `README.md`, `docs/ARCHITECTURE.md`, `docs/ROADMAP.md`를 같은 변경에서 갱신한다. `/etc/service-contest.env`, 인증서, SSH 키와 실제 secret은 저장소에 복사하지 않는다.
 

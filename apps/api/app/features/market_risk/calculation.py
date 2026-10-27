@@ -82,7 +82,8 @@ def calculate_market_risk(
         warnings.append("PARTIAL_PRICE_HISTORY")
     if instrument.currency == "USD":
         warnings.append("FX_REFERENCE_RATE")
-        warnings.append("PRICE_ADJUSTMENT_UNVERIFIED")
+        if data_source != "twelve_data+ecb_reference_fx":
+            warnings.append("PRICE_ADJUSTMENT_UNVERIFIED")
 
     # 1. Period return rate
     if first_pt.adjusted_close <= Decimal("0"):

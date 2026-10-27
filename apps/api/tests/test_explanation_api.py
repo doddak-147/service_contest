@@ -58,6 +58,7 @@ def test_template_provider_returns_approved_explanation() -> None:
     assert response.status_code == 200
     body = response.json()
     assert body["source"] == "template"
+    assert body["fallback_reason"] == "not_configured"
     assert "3,000,000원" in body["summary"]
     assert "50.0%" in body["summary"]
     assert "투자 추천" in body["caution"]
@@ -73,6 +74,7 @@ def test_llm_uses_only_minimal_result_and_server_substitutes_values() -> None:
 
     assert response.status_code == 200
     assert response.json()["source"] == "llm"
+    assert response.json()["fallback_reason"] is None
     assert "3,000,000원" in response.json()["summary"]
     assert "50.0%" in response.json()["summary"]
     assert adapter.payload == valid_request()
@@ -80,10 +82,23 @@ def test_llm_uses_only_minimal_result_and_server_substitutes_values() -> None:
     assert "name" not in adapter.payload
 
 
+def test_safe_financial_words_do_not_trigger_number_rejection() -> None:
+    adapter = CapturingAdapter(
+        "투자 원금이 변할 수 있으며 예상 손실은 {{investment_loss_krw}}입니다."
+    )
+    with make_client(adapter) as client:
+        response = client.post("/api/v1/explanations", json=valid_request())
+
+    assert response.status_code == 200
+    assert response.json()["source"] == "llm"
+    assert "3,000,000원" in response.json()["summary"]
+
+
 def test_new_number_or_recommendation_falls_back_to_template() -> None:
     for unsafe_summary in (
         "손실은 4,000,000원입니다.",
         "손실은 십 퍼센트입니다. {{investment_loss_krw}}",
+        "손실은 두 배입니다. {{investment_loss_krw}}",
         "이 경우 매도를 추천합니다. {{investment_loss_krw}}",
         "알 수 없는 값은 {{monthly_income_krw}}입니다.",
     ):
@@ -94,6 +109,7 @@ def test_new_number_or_recommendation_falls_back_to_template() -> None:
 
         assert response.status_code == 200
         assert response.json()["source"] == "template"
+        assert response.json()["fallback_reason"] == "safety_rejected"
         assert "3,000,000원" in response.json()["summary"]
 
 
@@ -103,6 +119,7 @@ def test_llm_failure_keeps_template_result() -> None:
 
     assert response.status_code == 200
     assert response.json()["source"] == "template"
+    assert response.json()["fallback_reason"] == "provider_unavailable"
 
 
 def test_explanation_contract_rejects_extra_financial_profile() -> None:

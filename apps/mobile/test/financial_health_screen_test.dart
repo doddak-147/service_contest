@@ -40,7 +40,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: FinancialHealthScreen(apiClient: apiClient),
+        home: FinancialHealthScreen(
+          apiClient: apiClient,
+          inputMode: FinancialInputMode.example,
+        ),
       ),
     );
 
@@ -132,7 +135,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: FinancialHealthScreen(apiClient: apiClient),
+        home: FinancialHealthScreen(
+          apiClient: apiClient,
+          inputMode: FinancialInputMode.example,
+        ),
       ),
     );
 
@@ -157,7 +163,10 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: FinancialHealthScreen(apiClient: apiClient),
+        home: FinancialHealthScreen(
+          apiClient: apiClient,
+          inputMode: FinancialInputMode.example,
+        ),
       ),
     );
 
@@ -193,5 +202,51 @@ void main() {
 
     expect(find.text('FINANCIAL HEALTH 결과'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('내 값으로 시작하면 예시값 없이 입력하고 예시에서 전환하면 모두 지운다', (tester) async {
+    final apiClient = ApiClient(
+      client: MockClient((_) async => http.Response('{}', 200)),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: FinancialHealthScreen(apiClient: apiClient),
+      ),
+    );
+    expect(find.text('내 값으로 입력'), findsOneWidget);
+    expect(
+      tester
+          .widgetList<TextField>(find.byType(TextField))
+          .every((field) => field.controller?.text.isEmpty ?? false),
+      isTrue,
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: FinancialHealthScreen(
+          key: const ValueKey('example'),
+          apiClient: apiClient,
+          inputMode: FinancialInputMode.example,
+        ),
+      ),
+    );
+    expect(find.text('가상 재무 예시'), findsOneWidget);
+    expect(
+      tester.widget<TextField>(find.byType(TextField).first).controller?.text,
+      '3,000,000',
+    );
+    await tester.tap(find.text('예시 지우고 내 값 입력하기'));
+    await tester.pumpAndSettle();
+    expect(find.text('내 값으로 입력'), findsOneWidget);
+    expect(
+      tester
+          .widgetList<TextField>(find.byType(TextField))
+          .every((field) => field.controller?.text.isEmpty ?? false),
+      isTrue,
+    );
   });
 }

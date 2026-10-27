@@ -42,6 +42,7 @@ class StressTestRequest(ContractModel):
     financial_profile: FinancialProfileInput
     historical_mdd_rate: float | None
     exchange_rate_change_rate: float = 0.0
+    custom_return_rate: float | None = None
 
 
 class ScenarioResult(ContractModel):

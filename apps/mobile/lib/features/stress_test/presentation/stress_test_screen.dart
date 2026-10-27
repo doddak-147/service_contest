@@ -7,6 +7,7 @@ import '../../../shared/theme/app_theme.dart';
 import '../data/stress_test_api.dart';
 import '../models/stress_test_models.dart';
 import 'widgets/stress_test_comparison_card.dart';
+import 'widgets/leverage_comparison_card.dart';
 import 'widgets/stress_test_result_card.dart';
 
 class StressTestScreen extends StatefulWidget {
@@ -16,6 +17,7 @@ class StressTestScreen extends StatefulWidget {
     this.historicalMddRate,
     this.historicalMddSource,
     this.instrumentCurrency,
+    this.isExampleProfile = false,
     super.key,
   });
 
@@ -24,6 +26,7 @@ class StressTestScreen extends StatefulWidget {
   final double? historicalMddRate;
   final String? historicalMddSource;
   final String? instrumentCurrency;
+  final bool isExampleProfile;
 
   @override
   State<StressTestScreen> createState() => _StressTestScreenState();
@@ -39,11 +42,15 @@ class _StressTestScreenState extends State<StressTestScreen> {
   late final TextEditingController _equityAmountController;
   late final TextEditingController _borrowedAmountController;
   late final TextEditingController _annualLoanRateController;
+  late final TextEditingController _customReturnRateController;
 
   late final StressTestApi _stressTestApi;
   String _selectedScenario = ScenarioKeys.down20;
   double _selectedFxChangeRate = 0.0;
   List<ScenarioResult> _results = const [];
+  List<ScenarioResult> _withoutBorrowingResults = const [];
+  FinancialProfileInput? _analyzedProfile;
+  String? _comparisonMessage;
   String? _errorMessage;
   bool _isLoading = false;
   int _requestId = 0;
@@ -57,6 +64,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     ScenarioKeys.down40: '-40%',
     ScenarioKeys.down50: '-50%',
     ScenarioKeys.historicalMdd: '과거 MDD',
+    ScenarioKeys.custom: '직접 입력',
   };
 
   static const _fieldLabels = {
@@ -70,6 +78,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     'borrowed_amount_krw': '차입금',
     'annual_loan_rate': '차입금 연이율',
     'exchange_rate_change_rate': '원/달러 환율 변동률',
+    'custom_return_rate': '직접 입력 시나리오',
   };
 
   @override
@@ -104,6 +113,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     _annualLoanRateController = TextEditingController(
       text: _formatRateInput(profile?.annual_loan_rate ?? 0.06),
     );
+    _customReturnRateController = TextEditingController();
   }
 
   @override
@@ -117,6 +127,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
     _equityAmountController.dispose();
     _borrowedAmountController.dispose();
     _annualLoanRateController.dispose();
+    _customReturnRateController.dispose();
     super.dispose();
   }
 
@@ -141,6 +152,24 @@ class _StressTestScreenState extends State<StressTestScreen> {
     final percent = double.tryParse(rawValue);
     if (rawValue.isEmpty || percent == null || !percent.isFinite) {
       throw const FormatException('차입금 연이율을 숫자로 입력해 주세요.');
+    }
+    return percent / 100;
+  }
+
+  double? _parseCustomReturnRate() {
+    final rawValue = _customReturnRateController.text.trim();
+    if (rawValue.isEmpty && _selectedScenario != ScenarioKeys.custom) {
+      return null;
+    }
+    final percent = double.tryParse(rawValue);
+    if (percent == null ||
+        !percent.isFinite ||
+        !RegExp(r'^[-+]?\d{1,3}(\.\d{1,2})?$').hasMatch(rawValue) ||
+        percent < -100 ||
+        percent > 100) {
+      throw const FormatException(
+        '직접 입력 비율은 -100%부터 +100%까지 소수 둘째 자리 이하로 입력해 주세요.',
+      );
     }
     return percent / 100;
   }
@@ -174,6 +203,7 @@ class _StressTestScreenState extends State<StressTestScreen> {
       exchange_rate_change_rate: widget.instrumentCurrency == 'USD'
           ? _selectedFxChangeRate
           : 0.0,
+      custom_return_rate: _parseCustomReturnRate(),
     );
   }
 
@@ -182,6 +212,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
     if (_results.isNotEmpty || _errorMessage != null || _isLoading) {
       setState(() {
         _results = const [];
+        _withoutBorrowingResults = const [];
+        _analyzedProfile = null;
+        _comparisonMessage = null;
         _errorMessage = null;
         _isLoading = false;
       });
@@ -194,20 +227,70 @@ class _StressTestScreenState extends State<StressTestScreen> {
     setState(() {
       _errorMessage = null;
       _isLoading = true;
+      _results = const [];
+      _withoutBorrowingResults = const [];
+      _analyzedProfile = null;
+      _comparisonMessage = null;
     });
 
     try {
-      final results = await _stressTestApi.analyze(_buildRequest());
+      final request = _buildRequest();
+      final profile = request.financial_profile;
+      final results = await _stressTestApi.analyze(request);
       if (!mounted || requestId != _requestId) {
         return;
       }
-      setState(() => _results = results);
+      setState(() {
+        _results = results;
+        _analyzedProfile = profile;
+      });
+
+      if (profile.borrowed_amount_krw == 0) {
+        setState(() => _comparisonMessage = '차입금이 0원이므로 두 경우가 같습니다.');
+      } else if (profile.equity_amount_krw == 0) {
+        setState(
+          () => _comparisonMessage =
+              '자기자본이 0원이어서 차입 없는 투자금은 0원입니다. 이 경우 비교 시나리오는 계산하지 않습니다.',
+        );
+      } else {
+        final withoutBorrowing = StressTestRequest(
+          financial_profile: FinancialProfileInput(
+            monthly_income_krw: profile.monthly_income_krw,
+            monthly_fixed_expenses_krw: profile.monthly_fixed_expenses_krw,
+            emergency_fund_krw: profile.emergency_fund_krw,
+            existing_loan_balance_krw: profile.existing_loan_balance_krw,
+            monthly_debt_payment_krw: profile.monthly_debt_payment_krw,
+            planned_investment_krw: profile.equity_amount_krw,
+            equity_amount_krw: profile.equity_amount_krw,
+            borrowed_amount_krw: 0,
+            annual_loan_rate: profile.annual_loan_rate,
+          ),
+          historical_mdd_rate: request.historical_mdd_rate,
+          exchange_rate_change_rate: request.exchange_rate_change_rate,
+          custom_return_rate: request.custom_return_rate,
+        );
+        try {
+          final baselineResults = await _stressTestApi.analyze(
+            withoutBorrowing,
+          );
+          if (!mounted || requestId != _requestId) return;
+          setState(() => _withoutBorrowingResults = baselineResults);
+        } catch (_) {
+          if (!mounted || requestId != _requestId) return;
+          setState(
+            () => _comparisonMessage =
+                '차입 없는 경우의 계산 결과를 불러오지 못했습니다. 기존 Stress Test 결과는 확인할 수 있습니다.',
+          );
+        }
+      }
     } catch (error) {
       if (!mounted || requestId != _requestId) {
         return;
       }
       setState(() {
         _results = const [];
+        _withoutBorrowingResults = const [];
+        _analyzedProfile = null;
         _errorMessage = _messageFor(error);
       });
     } finally {
@@ -228,6 +311,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
         'RATE_OUT_OF_RANGE' =>
           fieldError.field == 'exchange_rate_change_rate'
               ? '환율 변동률은 -50% 이상 +50% 이하로 선택해 주세요.'
+              : fieldError.field == 'custom_return_rate'
+              ? '직접 입력 비율은 -100%부터 +100%까지 입력해 주세요.'
               : '차입금 연이율은 0% 이상 100% 이하로 입력해 주세요.',
         _ => error.message,
       };
@@ -250,9 +335,17 @@ class _StressTestScreenState extends State<StressTestScreen> {
     return null;
   }
 
+  ScenarioResult? get _selectedWithoutBorrowingResult {
+    for (final result in _withoutBorrowingResults) {
+      if (result.scenario_key == _selectedScenario) return result;
+    }
+    return null;
+  }
+
   List<String> get _availableScenarioKeys => [
     ...ScenarioKeys.fixed,
     if (widget.historicalMddRate != null) ScenarioKeys.historicalMdd,
+    ScenarioKeys.custom,
   ];
 
   String _scenarioLabel(String scenarioKey) {
@@ -289,6 +382,13 @@ class _StressTestScreenState extends State<StressTestScreen> {
               const _ContextBanner(
                 icon: Icons.account_balance_wallet_outlined,
                 message: '금융체력 분석에서 사용한 재무정보를 불러왔습니다.',
+              ),
+            ],
+            if (widget.isExampleProfile || widget.initialProfile == null) ...[
+              const SizedBox(height: 12),
+              const _ContextBanner(
+                icon: Icons.science_outlined,
+                message: '가상 재무 예시값으로 시작했습니다. 값을 수정했다면 계산 전에 입력 내용을 확인해 주세요.',
               ),
             ],
             if (widget.historicalMddRate != null) ...[
@@ -416,6 +516,17 @@ class _StressTestScreenState extends State<StressTestScreen> {
                   })
                   .toList(growable: false),
             ),
+            if (_selectedScenario == ScenarioKeys.custom) ...[
+              const SizedBox(height: 16),
+              _InputField(
+                allowDecimal: true,
+                controller: _customReturnRateController,
+                hint: '예: -17.5는 17.5% 하락, 12.5는 12.5% 상승 가정',
+                label: '직접 입력 변동률',
+                onChanged: _clearResultOnEdit,
+              ),
+              const Text('미래 예측이 아닌 가정입니다. -100%부터 +100%까지 입력할 수 있습니다.'),
+            ],
             if (widget.instrumentCurrency == 'USD') ...[
               const SizedBox(height: 20),
               const Text(
@@ -487,6 +598,29 @@ class _StressTestScreenState extends State<StressTestScreen> {
               const SizedBox(height: 28),
               const _SectionHeading(
                 number: '4',
+                title: '차입 없음 · 차입 있음 비교',
+                description: '자기자본과 다른 재무조건은 고정하고, 차입금만 제외해 투자금 규모를 달리한 가정입니다.',
+              ),
+              const SizedBox(height: 16),
+              if (_selectedWithoutBorrowingResult != null &&
+                  _analyzedProfile != null)
+                LeverageComparisonCard(
+                  withoutBorrowing: _selectedWithoutBorrowingResult!,
+                  withBorrowing: selectedResult,
+                  profile: _analyzedProfile!,
+                )
+              else
+                _ContextBanner(
+                  icon: Icons.info_outline,
+                  message:
+                      _comparisonMessage ??
+                      (_isLoading
+                          ? '비교 결과를 계산하고 있습니다.'
+                          : '선택한 시나리오의 비교 결과가 없습니다.'),
+                ),
+              const SizedBox(height: 28),
+              const _SectionHeading(
+                number: '5',
                 title: '전체 시나리오 비교',
                 description: '같은 재무정보에 각 가정만 바꿔 결과를 비교합니다.',
               ),

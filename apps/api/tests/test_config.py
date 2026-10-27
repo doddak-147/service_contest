@@ -12,7 +12,7 @@ def test_load_settings_uses_defaults(monkeypatch) -> None:
 
     assert settings.app_env == "development"
     assert settings.cors_origins == DEFAULT_CORS_ORIGINS
-    assert settings.stock_data_provider == "naver"
+    assert settings.stock_data_provider == "disabled"
     assert settings.llm_provider == "template"
 
 
@@ -48,10 +48,32 @@ def test_settings_normalizes_stock_provider() -> None:
     settings = Settings(
         app_env="development",
         cors_origins=DEFAULT_CORS_ORIGINS,
-        stock_data_provider=" NAVER ",
+        stock_data_provider=" TWELVE ",
+        twelve_data_api_key=" demo-key ",
     )
 
-    assert settings.stock_data_provider == "naver"
+    assert settings.stock_data_provider == "twelve"
+    assert settings.twelve_data_api_key == "demo-key"
+    assert "demo-key" not in repr(settings)
+
+
+def test_settings_requires_twelve_key() -> None:
+    with pytest.raises(ValueError, match="TWELVE_DATA_API_KEY"):
+        Settings(
+            app_env="development",
+            cors_origins=DEFAULT_CORS_ORIGINS,
+            stock_data_provider="twelve",
+        )
+
+
+def test_settings_prevents_public_production_twelve_data() -> None:
+    with pytest.raises(ValueError, match="public production API"):
+        Settings(
+            app_env="production",
+            cors_origins=DEFAULT_CORS_ORIGINS,
+            stock_data_provider="twelve",
+            twelve_data_api_key="test-key",
+        )
 
 
 def test_settings_rejects_unknown_stock_provider() -> None:

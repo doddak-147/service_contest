@@ -5,19 +5,25 @@ import '../../../financial_health/presentation/widgets/financial_health_result_c
 import '../../../market_risk/presentation/widgets/market_risk_card.dart';
 import '../../../stress_test/presentation/widgets/stress_test_comparison_card.dart';
 import '../../../stress_test/presentation/widgets/stress_test_result_card.dart';
+import '../../../stress_test/models/stress_test_models.dart';
 import '../../models/combined_report_models.dart';
+import 'impact_summary_card.dart';
 
 class CombinedReportView extends StatelessWidget {
   const CombinedReportView({
     required this.result,
+    required this.financialProfile,
     required this.explanation,
     required this.explanationError,
     required this.isExplanationLoading,
     required this.onRetryExplanation,
+    this.isExampleProfile = false,
     super.key,
   });
 
   final CombinedAnalysisResult result;
+  final FinancialProfileInput financialProfile;
+  final bool isExampleProfile;
   final ExplanationResult? explanation;
   final String? explanationError;
   final bool isExplanationLoading;
@@ -35,7 +41,22 @@ class CombinedReportView extends StatelessWidget {
         const SizedBox(height: 10),
         const Text('사용자의 재무정보와 선택 종목의 과거 위험을 같은 기준으로 결합한 결과입니다.'),
         const SizedBox(height: 20),
-        _ReportMetadata(result: result),
+        if (isExampleProfile) ...[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(14),
+              child: Text(
+                '가상 재무 예시로 시작한 결과입니다. 재무 입력값을 수정했을 수 있으며, 종목의 과거 시세는 실제 데이터일 수 있습니다.',
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ],
+        ImpactSummaryCard(result: result, profile: financialProfile),
         if (result.warnings.isNotEmpty) ...[
           const SizedBox(height: 16),
           _WarningCard(warnings: result.warnings),
@@ -99,6 +120,8 @@ class CombinedReportView extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+        _ReportMetadata(result: result),
       ],
     );
   }
@@ -111,30 +134,27 @@ class _ReportMetadata extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.border),
+    return Card(
+      color: AppColors.surface,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(12),
+        side: const BorderSide(color: AppColors.border),
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '계산 버전 ${result.calculation_version}',
-              style: const TextStyle(fontWeight: FontWeight.w700),
-            ),
-            const SizedBox(height: 6),
-            Text('계산 시각: ${result.calculated_at}'),
-            const SizedBox(height: 4),
-            Text(
-              '요청 ID: ${result.request_id}',
-              style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
-            ),
-          ],
-        ),
+      child: ExpansionTile(
+        title: const Text('계산 세부 정보'),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        expandedCrossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('계산 버전 ${result.calculation_version}'),
+          const SizedBox(height: 6),
+          Text('계산 시각: ${result.calculated_at}'),
+          const SizedBox(height: 4),
+          Text(
+            '요청 ID: ${result.request_id}',
+            style: const TextStyle(color: AppColors.textMuted, fontSize: 12),
+          ),
+        ],
       ),
     );
   }
@@ -240,6 +260,16 @@ class _ExplanationCard extends StatelessWidget {
                 ],
               )
             else if (explanation != null) ...[
+              if (explanation!.source == 'template') ...[
+                Text(switch (explanation!.fallback_reason) {
+                  'not_configured' => '현재 서버에 AI 설명 설정이 없어 검증된 기본 설명을 표시합니다.',
+                  'provider_unavailable' =>
+                    'AI 서비스 응답을 받지 못해 검증된 기본 설명을 표시합니다.',
+                  'safety_rejected' => 'AI 문장이 검증 기준을 통과하지 못해 기본 설명을 표시합니다.',
+                  _ => '검증된 기본 설명을 표시합니다.',
+                }, style: const TextStyle(color: AppColors.textMuted)),
+                const SizedBox(height: 10),
+              ],
               Text(explanation!.summary, style: const TextStyle(height: 1.55)),
               const SizedBox(height: 10),
               Text(

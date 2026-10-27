@@ -76,6 +76,60 @@ def test_invalid_exchange_shock_is_rejected() -> None:
     assert exc_info.value.reason == "RATE_OUT_OF_RANGE"
 
 
+def test_custom_decline_is_appended_and_compounds_with_exchange_shock() -> None:
+    results = calculate_stress_tests(
+        make_profile(), None, Decimal("-0.1"), Decimal("-0.175")
+    )
+
+    custom = results[-1]
+    assert len(results) == 8
+    assert custom.scenario_key == "custom"
+    assert custom.label == "직접 입력 (-17.5%)"
+    assert custom.price_change_rate == Decimal("-0.175000")
+    assert custom.exchange_rate_change_rate == Decimal("-0.100000")
+    assert custom.assumed_return_rate == Decimal("-0.257500")
+    assert custom.investment_loss_krw == 3_862_500
+
+
+def test_custom_total_loss_has_no_finite_recovery_rate() -> None:
+    result = calculate_stress_tests(
+        make_profile(), None, custom_return_rate=Decimal("-1")
+    )[-1]
+
+    assert result.investment_loss_krw == 15_000_000
+    assert result.recovery_required_rate is None
+    assert "NO_FINITE_RECOVERY_RATE" in result.unavailable_reasons
+
+
+def test_custom_increase_is_labeled_and_has_no_investment_loss() -> None:
+    result = calculate_stress_tests(
+        make_profile(), None, custom_return_rate=Decimal("0.125")
+    )[-1]
+
+    assert result.label == "직접 입력 (+12.5%)"
+    assert result.investment_loss_krw == 0
+    assert result.projected_investment_value_krw == 16_875_000
+
+
+@pytest.mark.parametrize("rate", [Decimal("-1.01"), Decimal("1.01")])
+def test_custom_rate_outside_range_is_rejected(rate: Decimal) -> None:
+    with pytest.raises(CalculationInputError) as exc_info:
+        calculate_stress_tests(make_profile(), None, custom_return_rate=rate)
+
+    assert exc_info.value.field == "custom_return_rate"
+    assert exc_info.value.reason == "RATE_OUT_OF_RANGE"
+
+
+def test_non_finite_custom_rate_identifies_correct_field() -> None:
+    with pytest.raises(CalculationInputError) as exc_info:
+        calculate_stress_tests(
+            make_profile(), None, custom_return_rate=Decimal("NaN")
+        )
+
+    assert exc_info.value.field == "custom_return_rate"
+    assert exc_info.value.reason == "INVALID_SCENARIO_RATE"
+
+
 def test_investment_without_borrowing_has_no_interest() -> None:
     profile = replace(
         make_profile(),

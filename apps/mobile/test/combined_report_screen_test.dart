@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:financial_shock_preview/features/combined_report/presentation/combined_report_screen.dart';
+import 'package:financial_shock_preview/features/combined_report/models/combined_report_models.dart';
+import 'package:financial_shock_preview/features/combined_report/presentation/widgets/impact_summary_card.dart';
 import 'package:financial_shock_preview/features/financial_health/presentation/widgets/financial_health_result_card.dart';
 import 'package:financial_shock_preview/features/market_risk/models/market_risk_models.dart';
 import 'package:financial_shock_preview/features/market_risk/presentation/widgets/market_risk_card.dart';
@@ -54,12 +56,28 @@ void main() {
           instrument: _instrument,
           periodStart: '2025-01-02',
           periodEnd: '2025-12-30',
+          isExampleProfile: true,
         ),
       ),
     );
     await tester.pumpAndSettle();
 
     expect(find.byType(FinancialHealthResultCard), findsOneWidget);
+    expect(find.byType(ImpactSummaryCard), findsOneWidget);
+    expect(
+      find.text(
+        '가상 재무 예시로 시작한 결과입니다. 재무 입력값을 수정했을 수 있으며, 종목의 과거 시세는 실제 데이터일 수 있습니다.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('가정한 투자금 손실'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(ImpactSummaryCard),
+        matching: find.text('3,000,000원'),
+      ),
+      findsOneWidget,
+    );
     expect(find.byType(MarketRiskCard), findsOneWidget);
     expect(find.byType(StressTestResultCard), findsOneWidget);
     expect(find.text('과거 MDD 적용 충격'), findsOneWidget);
@@ -85,6 +103,7 @@ void main() {
             'source': 'template',
             'summary': '하락 가정의 검증된 기본 설명입니다.',
             'caution': '가정 결과이며 투자 추천이나 미래 가격 예측이 아닙니다.',
+            'fallback_reason': 'not_configured',
           });
         }
         return _jsonResponse(_combinedResponse(marketUnavailable: true));
@@ -107,6 +126,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.byType(FinancialHealthResultCard), findsOneWidget);
+    expect(find.textContaining('주가 -20% 고정 가정으로 표시'), findsOneWidget);
     expect(find.byType(MarketRiskCard), findsNothing);
     expect(find.byType(StressTestResultCard), findsNothing);
     expect(find.textContaining('주가 데이터 제공자와 통신하지 못해'), findsOneWidget);
@@ -116,6 +136,34 @@ void main() {
       scrollable: find.byType(Scrollable).first,
     );
     expect(find.text('하락 가정의 검증된 기본 설명입니다.'), findsOneWidget);
+    expect(find.textContaining('AI 설명 설정이 없어'), findsOneWidget);
+  });
+
+  testWidgets('좁은 화면에서도 손실 요약 카드가 넘치지 않는다', (tester) async {
+    tester.view.physicalSize = const Size(320, 720);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    final response = _combinedResponse();
+    (response['market_risk'] as Map<String, dynamic>)['data_source'] =
+        'twelve_data+ecb_reference_fx';
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Scaffold(
+          body: SingleChildScrollView(
+            child: ImpactSummaryCard(
+              result: CombinedAnalysisResult.fromJson(response),
+              profile: _profile,
+            ),
+          ),
+        ),
+      ),
+    );
+    expect(tester.takeException(), isNull);
+    expect(find.text('한눈에 보는 손실 충격'), findsOneWidget);
+    expect(find.textContaining('Twelve Data + ECB 참고환율'), findsOneWidget);
   });
 }
 

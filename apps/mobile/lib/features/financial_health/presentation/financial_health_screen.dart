@@ -11,32 +11,34 @@ import '../data/financial_health_api.dart';
 import '../models/financial_health_models.dart';
 import 'widgets/financial_health_result_card.dart';
 
+enum FinancialInputMode { example, personal }
+
 class FinancialHealthScreen extends StatefulWidget {
-  const FinancialHealthScreen({required this.apiClient, super.key});
+  const FinancialHealthScreen({
+    required this.apiClient,
+    this.inputMode = FinancialInputMode.personal,
+    super.key,
+  });
 
   final ApiClient apiClient;
+  final FinancialInputMode inputMode;
 
   @override
   State<FinancialHealthScreen> createState() => _FinancialHealthScreenState();
 }
 
 class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
-  // API_CONTRACT.md의 예시값을 기본값으로 두면 팀원이 앱을 켠 즉시 검산할 수 있다.
-  final _monthlyIncomeController = TextEditingController(text: '3,000,000');
-  final _monthlyFixedExpensesController = TextEditingController(
-    text: '1,500,000',
-  );
-  final _emergencyFundController = TextEditingController(text: '5,000,000');
-  final _existingLoanBalanceController = TextEditingController(
-    text: '10,000,000',
-  );
-  final _monthlyDebtPaymentController = TextEditingController(text: '400,000');
-  final _plannedInvestmentController = TextEditingController(
-    text: '10,000,000',
-  );
-  final _equityAmountController = TextEditingController(text: '6,000,000');
-  final _borrowedAmountController = TextEditingController(text: '4,000,000');
-  final _annualLoanRateController = TextEditingController(text: '6');
+  late final TextEditingController _monthlyIncomeController;
+  late final TextEditingController _monthlyFixedExpensesController;
+  late final TextEditingController _emergencyFundController;
+  late final TextEditingController _existingLoanBalanceController;
+  late final TextEditingController _monthlyDebtPaymentController;
+  late final TextEditingController _plannedInvestmentController;
+  late final TextEditingController _equityAmountController;
+  late final TextEditingController _borrowedAmountController;
+  late final TextEditingController _annualLoanRateController;
+  late bool _usingExampleValues;
+  bool _exampleEdited = false;
 
   late final FinancialHealthApi _financialHealthApi;
   FinancialHealthResult? _result;
@@ -61,6 +63,31 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   void initState() {
     super.initState();
     _financialHealthApi = FinancialHealthApi(widget.apiClient);
+    _usingExampleValues = widget.inputMode == FinancialInputMode.example;
+    String initial(String example) => _usingExampleValues ? example : '';
+    _monthlyIncomeController = TextEditingController(
+      text: initial('3,000,000'),
+    );
+    _monthlyFixedExpensesController = TextEditingController(
+      text: initial('1,500,000'),
+    );
+    _emergencyFundController = TextEditingController(
+      text: initial('5,000,000'),
+    );
+    _existingLoanBalanceController = TextEditingController(
+      text: initial('10,000,000'),
+    );
+    _monthlyDebtPaymentController = TextEditingController(
+      text: initial('400,000'),
+    );
+    _plannedInvestmentController = TextEditingController(
+      text: initial('10,000,000'),
+    );
+    _equityAmountController = TextEditingController(text: initial('6,000,000'));
+    _borrowedAmountController = TextEditingController(
+      text: initial('4,000,000'),
+    );
+    _annualLoanRateController = TextEditingController(text: initial('6'));
   }
 
   @override
@@ -125,14 +152,44 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
 
   void _clearResultOnEdit(String _) {
     _requestId++;
-    if (_result != null || _errorMessage != null || _isLoading) {
+    if (_result != null ||
+        _errorMessage != null ||
+        _isLoading ||
+        (_usingExampleValues && !_exampleEdited)) {
       setState(() {
+        if (_usingExampleValues) _exampleEdited = true;
         _result = null;
         _analyzedProfile = null;
         _errorMessage = null;
         _isLoading = false;
       });
     }
+  }
+
+  void _startPersonalInput() {
+    _requestId++;
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _usingExampleValues = false;
+      _exampleEdited = false;
+      _result = null;
+      _analyzedProfile = null;
+      _errorMessage = null;
+      _isLoading = false;
+      for (final controller in [
+        _monthlyIncomeController,
+        _monthlyFixedExpensesController,
+        _emergencyFundController,
+        _existingLoanBalanceController,
+        _monthlyDebtPaymentController,
+        _plannedInvestmentController,
+        _equityAmountController,
+        _borrowedAmountController,
+        _annualLoanRateController,
+      ]) {
+        controller.clear();
+      }
+    });
   }
 
   Future<void> _analyze() async {
@@ -210,6 +267,43 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
               '현재 재무상태와 투자 계획을 함께 입력해 월 현금흐름, 비상자금 '
               '버팀 기간, 투자금 차입 비율을 확인합니다.',
               style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            const SizedBox(height: 16),
+            DecoratedBox(
+              decoration: BoxDecoration(
+                color: _usingExampleValues
+                    ? AppColors.primarySoft
+                    : AppColors.surface,
+                border: Border.all(color: AppColors.border),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _usingExampleValues ? '가상 재무 예시' : '내 값으로 입력',
+                      style: const TextStyle(fontWeight: FontWeight.w800),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      _usingExampleValues
+                          ? '미리 채운 재무 수치는 실제 사람의 정보가 아닙니다. '
+                                '${_exampleEdited ? '일부 값을 수정했습니다. ' : ''}'
+                                '이후 종목을 선택하면 실제 과거 시세가 사용될 수 있습니다.'
+                          : '예시 수치는 넣지 않았습니다. 해당 없는 항목에는 0을 입력해 주세요. 입력값은 서버에 저장하지 않습니다.',
+                    ),
+                    if (_usingExampleValues) ...[
+                      const SizedBox(height: 8),
+                      TextButton(
+                        onPressed: _startPersonalInput,
+                        child: const Text('예시 지우고 내 값 입력하기'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
             const SizedBox(height: 28),
             const _SectionHeading(
@@ -337,6 +431,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                         builder: (_) => StressTestScreen(
                           apiClient: widget.apiClient,
                           initialProfile: _analyzedProfile,
+                          isExampleProfile: _usingExampleValues,
                         ),
                       ),
                     );
@@ -352,6 +447,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                         builder: (_) => MarketRiskScreen(
                           apiClient: widget.apiClient,
                           financialProfile: _analyzedProfile,
+                          isExampleProfile: _usingExampleValues,
                         ),
                       ),
                     );

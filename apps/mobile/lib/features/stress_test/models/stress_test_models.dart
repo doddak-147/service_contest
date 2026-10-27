@@ -10,6 +10,7 @@ abstract final class ScenarioKeys {
   static const down40 = 'down_40';
   static const down50 = 'down_50';
   static const historicalMdd = 'historical_mdd';
+  static const custom = 'custom';
 
   static const all = {
     up20,
@@ -20,6 +21,7 @@ abstract final class ScenarioKeys {
     down40,
     down50,
     historicalMdd,
+    custom,
   };
 
   static const fixed = [up20, flat, down10, down20, down30, down40, down50];
@@ -70,17 +72,20 @@ class StressTestRequest {
     required this.financial_profile,
     required this.historical_mdd_rate,
     this.exchange_rate_change_rate = 0.0,
+    this.custom_return_rate,
   });
 
   final FinancialProfileInput financial_profile;
   final double? historical_mdd_rate;
   final double exchange_rate_change_rate;
+  final double? custom_return_rate;
 
   Map<String, dynamic> toJson() {
     return {
       'financial_profile': financial_profile.toJson(),
       'historical_mdd_rate': historical_mdd_rate,
       'exchange_rate_change_rate': exchange_rate_change_rate,
+      if (custom_return_rate != null) 'custom_return_rate': custom_return_rate,
     };
   }
 }

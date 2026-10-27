@@ -18,6 +18,7 @@ class ServerStatusCard extends StatefulWidget {
 class _ServerStatusCardState extends State<ServerStatusCard> {
   _ConnectionStatus _status = _ConnectionStatus.checking;
   String? _errorMessage;
+  bool _showDetails = false;
 
   @override
   void initState() {
@@ -57,22 +58,19 @@ class _ServerStatusCardState extends State<ServerStatusCard> {
   @override
   Widget build(BuildContext context) {
     final isChecking = _status == _ConnectionStatus.checking;
-    final (label, description, foreground, background) = switch (_status) {
+    final (label, foreground, background) = switch (_status) {
       _ConnectionStatus.checking => (
         '확인 중',
-        'FastAPI 서버의 응답을 기다리고 있습니다.',
         AppColors.pending,
         AppColors.pendingBackground,
       ),
       _ConnectionStatus.online => (
         '연결됨',
-        'FastAPI 서버가 정상적으로 응답했습니다.',
         AppColors.success,
         AppColors.successBackground,
       ),
       _ConnectionStatus.offline => (
         '연결 실패',
-        '서버 주소와 실행 상태를 확인해 주세요.',
         AppColors.danger,
         AppColors.dangerBackground,
       ),
@@ -85,16 +83,18 @@ class _ServerStatusCardState extends State<ServerStatusCard> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.fromLTRB(16, 10, 12, 10),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Row(
               children: [
+                const Icon(Icons.cloud_outlined, color: AppColors.textMuted),
+                const SizedBox(width: 8),
                 Expanded(
                   child: Text(
-                    '서버 연결 상태',
-                    style: Theme.of(context).textTheme.titleLarge,
+                    '서버 연결',
+                    style: Theme.of(context).textTheme.bodyMedium,
                   ),
                 ),
                 Semantics(
@@ -119,20 +119,29 @@ class _ServerStatusCardState extends State<ServerStatusCard> {
                     ),
                   ),
                 ),
+                IconButton(
+                  tooltip: '서버 다시 확인',
+                  onPressed: isChecking ? null : _checkConnection,
+                  icon: isChecking
+                      ? const SizedBox.square(
+                          dimension: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                ),
               ],
             ),
-            const SizedBox(height: 16),
-            Text(_errorMessage ?? description),
-            const SizedBox(height: 8),
-            SelectableText(
-              '${AppConfig.apiBaseUrl}/health',
-              style: Theme.of(context).textTheme.bodySmall,
+            if (_status == _ConnectionStatus.offline)
+              Text(_errorMessage ?? '서버 주소와 실행 상태를 확인해 주세요.'),
+            TextButton(
+              onPressed: () => setState(() => _showDetails = !_showDetails),
+              child: Text(_showDetails ? '연결 정보 접기' : '연결 정보 보기'),
             ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: isChecking ? null : _checkConnection,
-              child: Text(isChecking ? '확인 중…' : '다시 확인'),
-            ),
+            if (_showDetails)
+              SelectableText(
+                '${AppConfig.apiBaseUrl}/health',
+                style: Theme.of(context).textTheme.bodySmall,
+              ),
           ],
         ),
       ),
