@@ -40,8 +40,10 @@ class ImpactSummaryCard extends StatelessWidget {
             Text('한눈에 보는 손실 충격', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 6),
             Text(
-              isHistorical
-                  ? '선택 종목의 관측 기간 중 최대 하락폭을 내 투자금에 적용한 가정'
+              result.market_risk?.data_source == 'fictional_demo'
+                  ? '가상기업 A의 임의 하락률을 가상 투자금에 적용한 설명용 예시입니다. 실제 관측 결과가 아닙니다.'
+                  : isHistorical
+                  ? '선택 종목의 ${result.market_risk?.instrument.currency == 'USD' ? '최근 3개월 ' : ''}관측 구간(${result.market_risk?.period_start} ~ ${result.market_risk?.period_end}) 최대 하락폭을 내 투자금에 적용한 가정입니다. 전체 과거의 최악을 뜻하지 않습니다.'
                   : '종목 과거 위험을 적용하지 못해 주가 -20% 고정 가정으로 표시',
             ),
             if (scenario == null) ...[
@@ -86,7 +88,7 @@ class ImpactSummaryCard extends StatelessWidget {
               if (result.market_risk != null) ...[
                 const SizedBox(height: 14),
                 Text(
-                  '시세: ${_sourceLabel(result.market_risk!.data_source)} · 기준일 ${result.market_risk!.data_as_of}'
+                  '${result.market_risk!.data_source == 'fictional_demo' ? '자료' : '시세'}: ${_sourceLabel(result.market_risk!.data_source)} · ${result.market_risk!.data_source == 'fictional_demo' ? '가상 날짜' : '기준일'} ${result.market_risk!.data_as_of}'
                   '${result.market_risk!.fx_rate_as_of == null ? '' : ' · 환율 기준일 ${result.market_risk!.fx_rate_as_of}'}',
                   style: const TextStyle(
                     color: AppColors.textMuted,
@@ -95,8 +97,10 @@ class ImpactSummaryCard extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 8),
-              const Text(
-                '과거 관측값 또는 고정 가정을 적용한 계산이며 미래 손실 예측이 아닙니다.',
+              Text(
+                result.market_risk?.data_source == 'fictional_demo'
+                    ? '모두 고정 가상 예시값이며 미래 손실 예측이 아닙니다.'
+                    : '과거 관측값 또는 고정 가정을 적용한 계산이며 미래 손실 예측이 아닙니다.',
                 style: TextStyle(color: AppColors.textMuted, fontSize: 12),
               ),
             ],
@@ -153,5 +157,6 @@ String _formatMonths(double? value) =>
 
 String _sourceLabel(String source) => switch (source) {
   'twelve_data+ecb_reference_fx' => 'Twelve Data + ECB 참고환율',
+  'fictional_demo' => '가상 예시 데이터',
   _ => source,
 };

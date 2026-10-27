@@ -4,6 +4,7 @@ import '../../../shared/api/api_client.dart';
 import '../../../shared/theme/app_theme.dart';
 import '../../financial_health/presentation/financial_health_screen.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
+import '../../offline_demo/offline_demo_screen.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import 'about_screen.dart';
 import 'widgets/server_status_card.dart';
@@ -111,6 +112,21 @@ class _QuickStartCard extends StatelessWidget {
             const Text('① 재무상태 입력  →  ② 종목 선택  →  ③ 결합 결과'),
             const SizedBox(height: 16),
             FilledButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const OfflineDemoScreen(),
+                ),
+              ),
+              icon: const Icon(Icons.offline_bolt_outlined),
+              label: const Text('오프라인 체험 · 완전 가상'),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '공개 자료용: 실제 주가·환율·AI를 사용하지 않는 고정 가상 사례입니다.',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
               onPressed: () =>
                   _openFinancialHealth(context, FinancialInputMode.example),
               icon: const Icon(Icons.play_arrow_rounded),
@@ -164,12 +180,14 @@ class _HeroBanner extends StatelessWidget {
             children: [
               Icon(Icons.shield_outlined, color: Colors.white, size: 20),
               SizedBox(width: 8),
-              Text(
-                '금융위험 예방 서비스',
-                style: TextStyle(
-                  color: Color(0xFFD9F4F5),
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: 0.4,
+              Expanded(
+                child: Text(
+                  '금융위험 예방 서비스',
+                  style: TextStyle(
+                    color: Color(0xFFD9F4F5),
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 0.4,
+                  ),
                 ),
               ),
             ],

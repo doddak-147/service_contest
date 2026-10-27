@@ -62,7 +62,6 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(FinancialHealthResultCard), findsOneWidget);
     expect(find.byType(ImpactSummaryCard), findsOneWidget);
     expect(
       find.text(
@@ -78,10 +77,6 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.byType(MarketRiskCard), findsOneWidget);
-    expect(find.byType(StressTestResultCard), findsOneWidget);
-    expect(find.text('과거 MDD 적용 충격'), findsOneWidget);
-
     await tester.scrollUntilVisible(
       find.text('AI 쉬운 설명'),
       700,
@@ -89,6 +84,16 @@ void main() {
     );
     expect(find.textContaining('예상 손실은 3,000,000원'), findsOneWidget);
     expect(find.textContaining('투자 자문이 아닙니다'), findsOneWidget);
+    final details = find.text('계산 근거와 전체 시나리오 보기');
+    await tester.ensureVisible(details);
+    await tester.pumpAndSettle();
+    expect(find.byType(FinancialHealthResultCard), findsNothing);
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.byType(FinancialHealthResultCard), findsOneWidget);
+    expect(find.byType(MarketRiskCard), findsOneWidget);
+    expect(find.byType(StressTestResultCard), findsOneWidget);
+    expect(find.text('과거 MDD 적용 충격'), findsOneWidget);
   });
 
   testWidgets('주가 장애 부분 응답에서도 금융체력과 고정 시나리오를 표시한다', (tester) async {
@@ -125,10 +130,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.byType(FinancialHealthResultCard), findsOneWidget);
     expect(find.textContaining('주가 -20% 고정 가정으로 표시'), findsOneWidget);
-    expect(find.byType(MarketRiskCard), findsNothing);
-    expect(find.byType(StressTestResultCard), findsNothing);
     expect(find.textContaining('주가 데이터 제공자와 통신하지 못해'), findsOneWidget);
     await tester.scrollUntilVisible(
       find.text('검증된 기본 설명'),
@@ -137,6 +139,14 @@ void main() {
     );
     expect(find.text('하락 가정의 검증된 기본 설명입니다.'), findsOneWidget);
     expect(find.textContaining('AI 설명 설정이 없어'), findsOneWidget);
+    final details = find.text('계산 근거와 전체 시나리오 보기');
+    await tester.ensureVisible(details);
+    await tester.pumpAndSettle();
+    await tester.tap(details);
+    await tester.pumpAndSettle();
+    expect(find.byType(FinancialHealthResultCard), findsOneWidget);
+    expect(find.byType(MarketRiskCard), findsNothing);
+    expect(find.byType(StressTestResultCard), findsNothing);
   });
 
   testWidgets('좁은 화면에서도 손실 요약 카드가 넘치지 않는다', (tester) async {
@@ -151,11 +161,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.light,
-        home: Scaffold(
-          body: SingleChildScrollView(
-            child: ImpactSummaryCard(
-              result: CombinedAnalysisResult.fromJson(response),
-              profile: _profile,
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(2)),
+          child: Scaffold(
+            body: SingleChildScrollView(
+              child: ImpactSummaryCard(
+                result: CombinedAnalysisResult.fromJson(response),
+                profile: _profile,
+              ),
             ),
           ),
         ),

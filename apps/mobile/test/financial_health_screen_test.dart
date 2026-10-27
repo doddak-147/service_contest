@@ -12,6 +12,53 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  testWidgets('자기자본과 차입금 변경 시 총 투자금이 자동 계산되어 전송된다', (tester) async {
+    int? sentTotal;
+    final apiClient = ApiClient(
+      client: MockClient((request) async {
+        final body = jsonDecode(request.body) as Map<String, dynamic>;
+        sentTotal = body['planned_investment_krw'] as int;
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'monthly_surplus_krw': 1100000,
+              'emergency_runway_months': 2.631579,
+              'leverage_ratio': 0.363636,
+              'estimated_monthly_interest_krw': 20000,
+              'reported_total_debt_krw': 14000000,
+              'unavailable_reasons': <String>[],
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }),
+    );
+    addTearDown(apiClient.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: FinancialHealthScreen(
+          apiClient: apiClient,
+          inputMode: FinancialInputMode.example,
+        ),
+      ),
+    );
+
+    final equity = find.widgetWithText(TextField, '자기자본');
+    await tester.ensureVisible(equity);
+    await tester.enterText(equity, '7000000');
+    await tester.pumpAndSettle();
+    expect(find.text('11,000,000원'), findsOneWidget);
+    expect(find.widgetWithText(TextField, '총 투자 예정금액'), findsNothing);
+
+    final button = find.widgetWithText(FilledButton, '금융체력 계산하기');
+    await tester.ensureVisible(button);
+    await tester.tap(button);
+    await tester.pumpAndSettle();
+    expect(sentTotal, 11000000);
+  });
+
   testWidgets('입력값을 전송하고 금융체력 결과를 표시한다', (tester) async {
     final apiClient = ApiClient(
       client: MockClient((request) async {

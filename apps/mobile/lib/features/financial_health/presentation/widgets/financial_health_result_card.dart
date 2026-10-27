@@ -4,9 +4,14 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../models/financial_health_models.dart';
 
 class FinancialHealthResultCard extends StatelessWidget {
-  const FinancialHealthResultCard({required this.result, super.key});
+  const FinancialHealthResultCard({
+    required this.result,
+    this.isOfflineDemo = false,
+    super.key,
+  });
 
   final FinancialHealthResult result;
+  final bool isOfflineDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -55,10 +60,12 @@ class FinancialHealthResultCard extends StatelessWidget {
               value: _formatKrw(result.reported_total_debt_krw),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '이 결과는 입력한 재무정보를 수치로 정리한 것이며 투자 가능 여부나 '
-              '매수·매도 판단을 제시하지 않습니다. 금융 계산은 서버의 결정론적 '
-              'Python 코드에서 수행됩니다.',
+            Text(
+              isOfflineDemo
+                  ? '모든 값은 미리 작성한 가상 예시입니다. 서버에 계산을 요청하지 않았으며 투자 판단을 제시하지 않습니다.'
+                  : '이 결과는 입력한 재무정보를 수치로 정리한 것이며 투자 가능 여부나 '
+                        '매수·매도 판단을 제시하지 않습니다. 금융 계산은 서버의 결정론적 '
+                        'Python 코드에서 수행됩니다.',
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 13,

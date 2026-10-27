@@ -162,7 +162,8 @@ def build_llm_explanation(
         raise UnsafeExplanationError("INVALID_PLACEHOLDER")
     for match in placeholder_matches:
         context = PLACEHOLDER_CONTEXT.get(match.group(1))
-        if context is not None and context not in summary[max(0, match.start() - 48) : match.start()]:
+        preceding_text = summary[max(0, match.start() - 48) : match.start()]
+        if context is not None and context not in preceding_text:
             raise UnsafeExplanationError("INCORRECT_PLACEHOLDER_CONTEXT")
 
     rendered = _render(summary, payload)

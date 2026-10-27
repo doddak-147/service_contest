@@ -1,0 +1,212 @@
+// Entirely fictional, fixed showcase data. Never populate this file from an API response.
+import '../combined_report/models/combined_report_models.dart';
+import '../financial_health/models/financial_health_models.dart';
+import '../market_risk/models/market_risk_models.dart';
+import '../stress_test/models/stress_test_models.dart';
+
+abstract final class OfflineDemoData {
+  static const profile = FinancialProfileInput(
+    monthly_income_krw: 3000000,
+    monthly_fixed_expenses_krw: 1500000,
+    emergency_fund_krw: 5000000,
+    existing_loan_balance_krw: 10000000,
+    monthly_debt_payment_krw: 400000,
+    planned_investment_krw: 10000000,
+    equity_amount_krw: 6000000,
+    borrowed_amount_krw: 4000000,
+    annual_loan_rate: 0.06,
+  );
+
+  static const financialHealth = FinancialHealthResult(
+    monthly_surplus_krw: 1100000,
+    emergency_runway_months: 2.6315789473684212,
+    leverage_ratio: 0.4,
+    estimated_monthly_interest_krw: 20000,
+    reported_total_debt_krw: 14000000,
+    unavailable_reasons: [],
+  );
+
+  static const marketRisk = MarketRiskResult(
+    instrument: Instrument(
+      symbol: 'DEMO-A',
+      market: '가상 시장',
+      name: '가상기업 A',
+      currency: 'KRW',
+    ),
+    period_start: '2026-07-01',
+    period_end: '2026-09-29',
+    data_as_of: '2026-09-29',
+    data_source: 'fictional_demo',
+    observation_count: 63,
+    period_return_rate: -0.05,
+    annualized_volatility: 0.24,
+    max_drawdown_rate: -0.30,
+    peak_date: '2026-07-15',
+    trough_date: '2026-08-21',
+    recovery_date: null,
+    warnings: [],
+  );
+
+  static const mddImpact = ScenarioResult(
+    scenario_key: ScenarioKeys.historicalMdd,
+    label: '가상 MDD',
+    assumed_return_rate: -0.30,
+    projected_investment_value_krw: 7000000,
+    investment_pnl_krw: -3000000,
+    investment_loss_krw: 3000000,
+    reported_total_debt_krw: 14000000,
+    net_investment_equity_krw: 3000000,
+    loss_to_equity_ratio: 0.5,
+    loss_to_emergency_fund_ratio: 0.6,
+    loss_to_monthly_fixed_expenses: 2.0,
+    estimated_annual_interest_krw: 240000,
+    estimated_monthly_interest_krw: 20000,
+    recovery_required_rate: 0.42857142857142855,
+    unavailable_reasons: [],
+  );
+
+  static const scenarios = <ScenarioResult>[
+    ScenarioResult(
+      scenario_key: ScenarioKeys.up20,
+      label: '주가 +20%',
+      assumed_return_rate: 0.20,
+      projected_investment_value_krw: 12000000,
+      investment_pnl_krw: 2000000,
+      investment_loss_krw: 0,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 8000000,
+      loss_to_equity_ratio: 0,
+      loss_to_emergency_fund_ratio: 0,
+      loss_to_monthly_fixed_expenses: 0,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.flat,
+      label: '변동 없음',
+      assumed_return_rate: 0,
+      projected_investment_value_krw: 10000000,
+      investment_pnl_krw: 0,
+      investment_loss_krw: 0,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 6000000,
+      loss_to_equity_ratio: 0,
+      loss_to_emergency_fund_ratio: 0,
+      loss_to_monthly_fixed_expenses: 0,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.down10,
+      label: '주가 -10%',
+      assumed_return_rate: -0.10,
+      projected_investment_value_krw: 9000000,
+      investment_pnl_krw: -1000000,
+      investment_loss_krw: 1000000,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 5000000,
+      loss_to_equity_ratio: 0.16666666666666666,
+      loss_to_emergency_fund_ratio: 0.2,
+      loss_to_monthly_fixed_expenses: 0.6666666666666666,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0.1111111111111111,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.down20,
+      label: '주가 -20%',
+      assumed_return_rate: -0.20,
+      projected_investment_value_krw: 8000000,
+      investment_pnl_krw: -2000000,
+      investment_loss_krw: 2000000,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 4000000,
+      loss_to_equity_ratio: 0.3333333333333333,
+      loss_to_emergency_fund_ratio: 0.4,
+      loss_to_monthly_fixed_expenses: 1.3333333333333333,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0.25,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.down30,
+      label: '주가 -30%',
+      assumed_return_rate: -0.30,
+      projected_investment_value_krw: 7000000,
+      investment_pnl_krw: -3000000,
+      investment_loss_krw: 3000000,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 3000000,
+      loss_to_equity_ratio: 0.5,
+      loss_to_emergency_fund_ratio: 0.6,
+      loss_to_monthly_fixed_expenses: 2.0,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0.42857142857142855,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.down40,
+      label: '주가 -40%',
+      assumed_return_rate: -0.40,
+      projected_investment_value_krw: 6000000,
+      investment_pnl_krw: -4000000,
+      investment_loss_krw: 4000000,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 2000000,
+      loss_to_equity_ratio: 0.6666666666666666,
+      loss_to_emergency_fund_ratio: 0.8,
+      loss_to_monthly_fixed_expenses: 2.6666666666666665,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 0.6666666666666666,
+      unavailable_reasons: [],
+    ),
+    ScenarioResult(
+      scenario_key: ScenarioKeys.down50,
+      label: '주가 -50%',
+      assumed_return_rate: -0.50,
+      projected_investment_value_krw: 5000000,
+      investment_pnl_krw: -5000000,
+      investment_loss_krw: 5000000,
+      reported_total_debt_krw: 14000000,
+      net_investment_equity_krw: 1000000,
+      loss_to_equity_ratio: 0.8333333333333334,
+      loss_to_emergency_fund_ratio: 1,
+      loss_to_monthly_fixed_expenses: 3.3333333333333335,
+      estimated_annual_interest_krw: 240000,
+      estimated_monthly_interest_krw: 20000,
+      recovery_required_rate: 1,
+      unavailable_reasons: [],
+    ),
+  ];
+
+  static const report = CombinedAnalysisResult(
+    request_id: 'offline-fictional-example',
+    calculated_at: '고정 가상 예시 · 서버 요청 없음',
+    calculation_version: 'offline-demo-1',
+    financial_health: financialHealth,
+    market_risk: marketRisk,
+    mdd_impact: mddImpact,
+    scenarios: scenarios,
+    warnings: [],
+    disclaimer:
+        '모든 인물·종목·날짜·시세 지표·재무 값과 결과는 설명을 위해 만든 가상 예시입니다. '
+        '실제 시장 데이터나 AI 응답을 사용하지 않았으며, 미래 손실 예측·투자 권유가 아닙니다.',
+  );
+
+  static const explanation = ExplanationResult(
+    source: 'template',
+    summary:
+        '가상의 투자금 1,000만 원에 가상 하락률 30%를 적용하면 손실은 300만 원입니다. '
+        '차입 원금 400만 원은 그대로 남아 순투자지분은 300만 원이 됩니다. '
+        '이 손실은 가상 자기자본의 절반에 해당합니다.',
+    caution: '이 문장은 미리 작성한 가상 예시 설명입니다. 실제 데이터 분석이나 AI 응답이 아닙니다.',
+  );
+}

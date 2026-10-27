@@ -48,6 +48,8 @@ class MarketRiskCard extends StatelessWidget {
                   child: Text(
                     result.data_source == 'twelve_data+ecb_reference_fx'
                         ? 'Twelve Data + ECB'
+                        : result.data_source == 'fictional_demo'
+                        ? '가상 예시 데이터'
                         : result.data_source,
                     style: const TextStyle(
                       fontSize: 12,
@@ -77,7 +79,9 @@ class MarketRiskCard extends StatelessWidget {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      '${result.period_start} ~ ${result.period_end} (기준일: ${result.data_as_of}, ${result.observation_count}일 관측)',
+                      result.data_source == 'fictional_demo'
+                          ? '${result.period_start} ~ ${result.period_end} (가상 날짜 · 가상 관측치 ${result.observation_count}개)'
+                          : '${result.period_start} ~ ${result.period_end} (기준일: ${result.data_as_of}, ${result.observation_count}일 관측)',
                       style: const TextStyle(
                         fontSize: 12,
                         color: AppColors.textMuted,
@@ -90,9 +94,11 @@ class MarketRiskCard extends StatelessWidget {
             const SizedBox(height: 20),
 
             // Core 3 Metrics
-            const Text(
-              '과거 위험 핵심 지표',
-              style: TextStyle(
+            Text(
+              result.data_source == 'fictional_demo'
+                  ? '가상 위험 핵심 지표'
+                  : '과거 위험 핵심 지표',
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.text,
@@ -124,13 +130,19 @@ class MarketRiskCard extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 8),
-            _MddHighlightTile(mddRate: result.max_drawdown_rate),
+            _MddHighlightTile(
+              mddRate: result.max_drawdown_rate,
+              isRecentThreeMonths: result.instrument.currency == 'USD',
+              isFictional: result.data_source == 'fictional_demo',
+            ),
             const SizedBox(height: 20),
 
             // MDD Period Details
-            const Text(
-              '주요 하락 구간 (MDD 상세)',
-              style: TextStyle(
+            Text(
+              result.data_source == 'fictional_demo'
+                  ? '가상 하락 구간 (MDD 예시)'
+                  : '주요 하락 구간 (MDD 상세)',
+              style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
                 color: AppColors.text,
@@ -211,29 +223,36 @@ class MarketRiskCard extends StatelessWidget {
                 style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700),
               ),
               children: [
-                _DataLimitText(text: '데이터 제공자: ${result.data_source}'),
-                if (result.instrument.currency == 'USD') ...[
-                  if (result.data_source == 'twelve_data+ecb_reference_fx')
-                    const _DataLimitText(
-                      text: 'Twelve Data 일별 종가는 분할 조정 기준이며 배당은 포함하지 않습니다.',
+                if (result.data_source == 'fictional_demo')
+                  const _DataLimitText(
+                    text:
+                        '실제 시세를 조회하거나 저장한 값이 아닙니다. 표시된 날짜·지표·종목은 모두 임의의 가상 예시입니다.',
+                  )
+                else ...[
+                  _DataLimitText(text: '데이터 제공자: ${result.data_source}'),
+                  if (result.instrument.currency == 'USD') ...[
+                    if (result.data_source == 'twelve_data+ecb_reference_fx')
+                      const _DataLimitText(
+                        text: 'Twelve Data 일별 종가는 분할 조정 기준이며 배당은 포함하지 않습니다.',
+                      ),
+                    _DataLimitText(
+                      text:
+                          '미국 주가(USD) × ECB 기준 원/달러 환율로 원화 가격을 산출했습니다. '
+                          '최근 환율 기준일: ${result.fx_rate_as_of ?? '확인 불가'}.',
                     ),
-                  _DataLimitText(
-                    text:
-                        '미국 주가(USD) × ECB 기준 원/달러 환율로 원화 가격을 산출했습니다. '
-                        '최근 환율 기준일: ${result.fx_rate_as_of ?? '확인 불가'}.',
-                  ),
+                    const _DataLimitText(
+                      text:
+                          'ECB 환율은 EUR 대비 USD·KRW의 일별 기준값으로 계산한 참고 환율입니다. '
+                          '실제 환전 가격·수수료와 다릅니다.',
+                    ),
+                  ] else
+                    const _DataLimitText(
+                      text: '기간 수익률·변동성·MDD는 제공자가 조정한 일별 종가를 사용합니다.',
+                    ),
                   const _DataLimitText(
-                    text:
-                        'ECB 환율은 EUR 대비 USD·KRW의 일별 기준값으로 계산한 참고 환율입니다. '
-                        '실제 환전 가격·수수료와 다릅니다.',
+                    text: '액면분할·병합 등 기업행사 반영 기준과 과거 데이터 정정은 제공자 정책에 의존합니다.',
                   ),
-                ] else
-                  const _DataLimitText(
-                    text: '기간 수익률·변동성·MDD는 제공자가 조정한 일별 종가를 사용합니다.',
-                  ),
-                const _DataLimitText(
-                  text: '액면분할·병합 등 기업행사 반영 기준과 과거 데이터 정정은 제공자 정책에 의존합니다.',
-                ),
+                ],
                 const _DataLimitText(
                   text: '배당을 포함한 총수익률이나 미래 손실 확률을 의미하지 않습니다.',
                 ),
@@ -247,9 +266,11 @@ class MarketRiskCard extends StatelessWidget {
                 color: AppColors.background,
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                '과거 데이터는 미래 결과를 보장하지 않습니다. 본 서비스는 투자 추천, 매수·매도 판단을 '
-                '제공하지 않으며, 가정된 위험 충격을 이해하기 위한 예방 목적의 분석입니다.',
+              child: Text(
+                result.data_source == 'fictional_demo'
+                    ? '모든 종목·시세·지표는 가상 예시입니다. 미래 결과를 예측하거나 투자 판단을 제시하지 않습니다.'
+                    : '과거 데이터는 미래 결과를 보장하지 않습니다. 본 서비스는 투자 추천, 매수·매도 판단을 '
+                          '제공하지 않으며, 가정된 위험 충격을 이해하기 위한 예방 목적의 분석입니다.',
                 style: TextStyle(
                   fontSize: 12,
                   color: AppColors.textMuted,
@@ -395,9 +416,15 @@ class _MetricTile extends StatelessWidget {
 }
 
 class _MddHighlightTile extends StatelessWidget {
-  const _MddHighlightTile({required this.mddRate});
+  const _MddHighlightTile({
+    required this.mddRate,
+    required this.isRecentThreeMonths,
+    required this.isFictional,
+  });
 
   final double? mddRate;
+  final bool isRecentThreeMonths;
+  final bool isFictional;
 
   @override
   Widget build(BuildContext context) {
@@ -425,10 +452,14 @@ class _MddHighlightTile extends StatelessWidget {
                 size: 20,
               ),
               const SizedBox(width: 6),
-              const Expanded(
+              Expanded(
                 flex: 3,
                 child: Text(
-                  '최대낙폭 (MDD)',
+                  isFictional
+                      ? '가상 구간 MDD'
+                      : isRecentThreeMonths
+                      ? '최근 3개월 MDD'
+                      : '관측 구간 MDD',
                   maxLines: 2,
                   style: TextStyle(
                     fontSize: 14,
@@ -460,9 +491,11 @@ class _MddHighlightTile extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 6),
-          const Text(
-            '조회 기간 중 누적 최고점 대비 최악의 하락률',
-            style: TextStyle(fontSize: 11, color: AppColors.textMuted),
+          Text(
+            isFictional
+                ? '가상 가격 흐름에서 최고점 대비 하락을 가정한 설명용 수치입니다.'
+                : '${isRecentThreeMonths ? '최근 3개월' : '조회 기간'} 중 누적 최고점 대비 최대 하락률입니다. 전체 과거의 최악을 뜻하지 않습니다.',
+            style: const TextStyle(fontSize: 11, color: AppColors.textMuted),
           ),
         ],
       ),
@@ -495,12 +528,15 @@ class _DrawdownRow extends StatelessWidget {
             style: const TextStyle(fontSize: 13, color: AppColors.textMuted),
           ),
         ),
-        Text(
-          value,
-          style: const TextStyle(
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
+        Flexible(
+          child: Text(
+            value,
+            textAlign: TextAlign.end,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
           ),
         ),
       ],

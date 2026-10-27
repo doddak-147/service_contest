@@ -157,6 +157,33 @@ void main() {
     expect(requestedFxRate, 0.1);
   });
 
+  testWidgets('과거 MDD 선택 시 환율 선택이 적용되지 않음을 안내한다', (tester) async {
+    final apiClient = ApiClient(
+      client: MockClient((request) async => http.Response('', 500)),
+    );
+    addTearDown(apiClient.close);
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: StressTestScreen(
+          apiClient: apiClient,
+          historicalMddRate: -0.3,
+          instrumentCurrency: 'USD',
+        ),
+      ),
+    );
+    await tester.scrollUntilVisible(
+      find.text('과거 MDD (-30.0%)'),
+      350,
+      scrollable: find.byType(Scrollable).first,
+    );
+    await tester.tap(find.text('과거 MDD (-30.0%)'));
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('환율 선택은 과거 MDD 결과에는 적용되지'), findsOneWidget);
+  });
+
   testWidgets('전체 재무정보와 MDD를 보내고 8개 시나리오를 비교한다', (tester) async {
     const profile = FinancialProfileInput(
       monthly_income_krw: 3000000,
@@ -177,6 +204,10 @@ void main() {
         expect(sentProfile['emergency_fund_krw'], 5000000);
         expect(sentProfile['existing_loan_balance_krw'], 10000000);
         expect(sentProfile['monthly_debt_payment_krw'], 400000);
+        expect(
+          sentProfile['planned_investment_krw'],
+          sentProfile['borrowed_amount_krw'] == 0 ? 6000000 : 10000000,
+        );
         expect(body['historical_mdd_rate'], -0.3);
         return http.Response.bytes(
           utf8.encode(jsonEncode(_scenarioResponse())),
@@ -203,8 +234,9 @@ void main() {
         .widgetList<TextField>(find.byType(TextField))
         .toList(growable: false);
     expect(fields.first.controller?.text, '3,000,000');
+    expect(find.widgetWithText(TextField, '총 투자 예정금액'), findsNothing);
     expect(find.text('금융체력 분석에서 사용한 재무정보를 불러왔습니다.'), findsOneWidget);
-    expect(find.textContaining('테스트 종목의 과거 MDD'), findsOneWidget);
+    expect(find.textContaining('테스트 종목의 관측 구간 MDD'), findsOneWidget);
 
     final calculateButton = find.widgetWithText(FilledButton, '금융 충격 계산하기');
     await tester.scrollUntilVisible(

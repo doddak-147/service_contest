@@ -4,9 +4,14 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../models/stress_test_models.dart';
 
 class StressTestResultCard extends StatelessWidget {
-  const StressTestResultCard({required this.result, super.key});
+  const StressTestResultCard({
+    required this.result,
+    this.isOfflineDemo = false,
+    super.key,
+  });
 
   final ScenarioResult result;
+  final bool isOfflineDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +74,7 @@ class StressTestResultCard extends StatelessWidget {
             ],
             _ResultRow(
               emphasize: true,
-              label: '예상 투자손실',
+              label: isOfflineDemo ? '가정한 투자손실' : '예상 투자손실',
               value: _formatKrw(result.investment_loss_krw),
             ),
             _ResultRow(
@@ -153,9 +158,11 @@ class StressTestResultCard extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 16),
-            const Text(
-              '선택한 시나리오를 적용한 가정 결과이며 미래 가격 예측이나 투자 권유가 '
-              '아닙니다. 계산은 서버의 결정론적 Python 코드로 수행됩니다.',
+            Text(
+              isOfflineDemo
+                  ? '미리 작성한 가상 시나리오 결과입니다. 실제 시세·서버 계산을 사용하지 않으며 미래 가격 예측이나 투자 권유가 아닙니다.'
+                  : '선택한 시나리오를 적용한 가정 결과이며 미래 가격 예측이나 투자 권유가 '
+                        '아닙니다. 계산은 서버의 결정론적 Python 코드로 수행됩니다.',
               style: TextStyle(
                 color: AppColors.textMuted,
                 fontSize: 13,
