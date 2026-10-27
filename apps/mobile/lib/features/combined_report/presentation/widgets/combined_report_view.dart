@@ -18,12 +18,14 @@ class CombinedReportView extends StatelessWidget {
     required this.isExplanationLoading,
     required this.onRetryExplanation,
     this.isExampleProfile = false,
+    this.isOfflineDemo = false,
     super.key,
   });
 
   final CombinedAnalysisResult result;
   final FinancialProfileInput financialProfile;
   final bool isExampleProfile;
+  final bool isOfflineDemo;
   final ExplanationResult? explanation;
   final String? explanationError;
   final bool isExplanationLoading;
@@ -39,9 +41,25 @@ class CombinedReportView extends StatelessWidget {
           style: Theme.of(context).textTheme.headlineMedium,
         ),
         const SizedBox(height: 10),
-        const Text('사용자의 재무정보와 선택 종목의 과거 위험을 같은 기준으로 결합한 결과입니다.'),
+        Text(
+          isOfflineDemo
+              ? '가상 재무정보와 가상 종목 위험을 결합한 고정 예시입니다.'
+              : '사용자의 재무정보와 선택 종목의 과거 위험을 같은 기준으로 결합한 결과입니다.',
+        ),
         const SizedBox(height: 20),
-        if (isExampleProfile) ...[
+        if (isOfflineDemo) ...[
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.all(14),
+              child: Text('완전 가상 데이터: 실제 시세·환율·AI 응답이나 서버 계산을 사용하지 않습니다.'),
+            ),
+          ),
+          const SizedBox(height: 16),
+        ] else if (isExampleProfile) ...[
           DecoratedBox(
             decoration: BoxDecoration(
               color: AppColors.primarySoft,
@@ -57,52 +75,82 @@ class CombinedReportView extends StatelessWidget {
           const SizedBox(height: 16),
         ],
         ImpactSummaryCard(result: result, profile: financialProfile),
-        if (result.warnings.isNotEmpty) ...[
-          const SizedBox(height: 16),
-          _WarningCard(warnings: result.warnings),
-        ],
-        const SizedBox(height: 28),
-        const _SectionTitle(number: '1', title: '개인 금융체력'),
-        const SizedBox(height: 12),
-        FinancialHealthResultCard(result: result.financial_health),
-        const SizedBox(height: 28),
-        const _SectionTitle(number: '2', title: '종목 과거 위험'),
-        const SizedBox(height: 12),
-        if (result.market_risk != null)
-          MarketRiskCard(result: result.market_risk!)
-        else
-          const _UnavailableCard(
-            message: '주가 데이터를 가져오지 못해 종목 과거 위험과 MDD 결합 결과를 표시하지 않습니다.',
-          ),
-        const SizedBox(height: 28),
-        const _SectionTitle(number: '3', title: '과거 MDD 적용 충격'),
-        const SizedBox(height: 12),
-        if (result.mdd_impact != null)
-          StressTestResultCard(result: result.mdd_impact!)
-        else
-          const _UnavailableCard(
-            message: '계산 가능한 과거 MDD가 없어 이 항목은 제외했습니다. 고정 시나리오는 계속 비교할 수 있습니다.',
-          ),
-        const SizedBox(height: 28),
-        const _SectionTitle(number: '4', title: '전체 시나리오 비교'),
-        const SizedBox(height: 12),
-        if (result.market_risk?.instrument.currency == 'USD') ...[
-          const Text(
-            '고정 시나리오는 환율 변동 0% 가정입니다. 과거 MDD는 당시 환율을 포함한 원화 기준입니다. 주가·환율 충격을 따로 비교하려면 종목 위험 화면의 Stress Test를 이용하세요.',
-          ),
-          const SizedBox(height: 12),
-        ],
-        StressTestComparisonCard(results: result.scenarios),
-        const SizedBox(height: 28),
-        const _SectionTitle(number: '5', title: '쉬운 결과 설명'),
+        const SizedBox(height: 20),
+        const _SectionTitle(number: '1', title: '쉬운 결과 설명'),
         const SizedBox(height: 12),
         _ExplanationCard(
           explanation: explanation,
           errorMessage: explanationError,
           isLoading: isExplanationLoading,
           onRetry: onRetryExplanation,
+          isOfflineDemo: isOfflineDemo,
         ),
-        const SizedBox(height: 24),
+        if (result.warnings.isNotEmpty) ...[
+          const SizedBox(height: 16),
+          _WarningCard(warnings: result.warnings),
+        ],
+        const SizedBox(height: 20),
+        Card(
+          color: AppColors.surface,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: const BorderSide(color: AppColors.border),
+          ),
+          child: ExpansionTile(
+            title: const Text('계산 근거와 전체 시나리오 보기'),
+            subtitle: const Text('재무·시세 지표, MDD 충격, 비교표'),
+            childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+            expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const _SectionTitle(number: '2', title: '개인 금융체력'),
+              const SizedBox(height: 12),
+              FinancialHealthResultCard(
+                result: result.financial_health,
+                isOfflineDemo: isOfflineDemo,
+              ),
+              const SizedBox(height: 28),
+              _SectionTitle(
+                number: '3',
+                title: isOfflineDemo ? '가상 종목 위험' : '종목 과거 위험',
+              ),
+              const SizedBox(height: 12),
+              if (result.market_risk != null)
+                MarketRiskCard(result: result.market_risk!)
+              else
+                const _UnavailableCard(
+                  message: '주가 데이터를 가져오지 못해 종목 과거 위험과 MDD 결합 결과를 표시하지 않습니다.',
+                ),
+              const SizedBox(height: 28),
+              _SectionTitle(
+                number: '4',
+                title: isOfflineDemo ? '가상 MDD 적용 충격' : '과거 MDD 적용 충격',
+              ),
+              const SizedBox(height: 12),
+              if (result.mdd_impact != null)
+                StressTestResultCard(
+                  result: result.mdd_impact!,
+                  isOfflineDemo: isOfflineDemo,
+                )
+              else
+                const _UnavailableCard(
+                  message:
+                      '계산 가능한 과거 MDD가 없어 이 항목은 제외했습니다. 고정 시나리오는 계속 비교할 수 있습니다.',
+                ),
+              const SizedBox(height: 28),
+              const _SectionTitle(number: '5', title: '전체 시나리오 비교'),
+              const SizedBox(height: 12),
+              if (result.market_risk?.instrument.currency == 'USD') ...[
+                const Text(
+                  '고정 시나리오는 환율 변동 0% 가정입니다. 과거 MDD는 당시 환율을 포함한 원화 기준입니다. 주가·환율 충격을 따로 비교하려면 종목 위험 화면의 Stress Test를 이용하세요.',
+                ),
+                const SizedBox(height: 12),
+              ],
+              StressTestComparisonCard(results: result.scenarios),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
         DecoratedBox(
           decoration: BoxDecoration(
             color: AppColors.background,
@@ -216,12 +264,14 @@ class _ExplanationCard extends StatelessWidget {
     required this.errorMessage,
     required this.isLoading,
     required this.onRetry,
+    this.isOfflineDemo = false,
   });
 
   final ExplanationResult? explanation;
   final String? errorMessage;
   final bool isLoading;
   final VoidCallback onRetry;
+  final bool isOfflineDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -237,7 +287,9 @@ class _ExplanationCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isLoading
+              isOfflineDemo
+                  ? '가상 예시 설명'
+                  : isLoading
                   ? '결과 설명'
                   : explanation?.source == 'llm'
                   ? 'AI 쉬운 설명'
@@ -260,7 +312,7 @@ class _ExplanationCard extends StatelessWidget {
                 ],
               )
             else if (explanation != null) ...[
-              if (explanation!.source == 'template') ...[
+              if (explanation!.source == 'template' && !isOfflineDemo) ...[
                 Text(switch (explanation!.fallback_reason) {
                   'not_configured' => '현재 서버에 AI 설명 설정이 없어 검증된 기본 설명을 표시합니다.',
                   'provider_unavailable' =>

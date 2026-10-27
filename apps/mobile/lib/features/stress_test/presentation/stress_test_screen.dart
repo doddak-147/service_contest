@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../shared/api/api_client.dart';
 import '../../../shared/input/krw_input_formatter.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/investment_total_summary.dart';
 import '../data/stress_test_api.dart';
 import '../models/stress_test_models.dart';
 import 'widgets/stress_test_comparison_card.dart';
@@ -38,7 +39,6 @@ class _StressTestScreenState extends State<StressTestScreen> {
   late final TextEditingController _emergencyFundController;
   late final TextEditingController _existingLoanBalanceController;
   late final TextEditingController _monthlyDebtPaymentController;
-  late final TextEditingController _plannedInvestmentController;
   late final TextEditingController _equityAmountController;
   late final TextEditingController _borrowedAmountController;
   late final TextEditingController _annualLoanRateController;
@@ -101,9 +101,6 @@ class _StressTestScreenState extends State<StressTestScreen> {
     _monthlyDebtPaymentController = TextEditingController(
       text: formatKrwInput('${profile?.monthly_debt_payment_krw ?? 400000}'),
     );
-    _plannedInvestmentController = TextEditingController(
-      text: formatKrwInput('${profile?.planned_investment_krw ?? 15000000}'),
-    );
     _equityAmountController = TextEditingController(
       text: formatKrwInput('${profile?.equity_amount_krw ?? 5000000}'),
     );
@@ -123,7 +120,6 @@ class _StressTestScreenState extends State<StressTestScreen> {
     _emergencyFundController.dispose();
     _existingLoanBalanceController.dispose();
     _monthlyDebtPaymentController.dispose();
-    _plannedInvestmentController.dispose();
     _equityAmountController.dispose();
     _borrowedAmountController.dispose();
     _annualLoanRateController.dispose();
@@ -175,6 +171,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
   }
 
   StressTestRequest _buildRequest() {
+    final equity = _parseInteger(_equityAmountController, '자기자본');
+    final borrowed = _parseInteger(_borrowedAmountController, '차입금');
     return StressTestRequest(
       financial_profile: FinancialProfileInput(
         monthly_income_krw: _parseInteger(_monthlyIncomeController, '월 소득'),
@@ -191,12 +189,9 @@ class _StressTestScreenState extends State<StressTestScreen> {
           _monthlyDebtPaymentController,
           '기존 월 대출 상환액',
         ),
-        planned_investment_krw: _parseInteger(
-          _plannedInvestmentController,
-          '총 투자 예정금액',
-        ),
-        equity_amount_krw: _parseInteger(_equityAmountController, '자기자본'),
-        borrowed_amount_krw: _parseInteger(_borrowedAmountController, '차입금'),
+        planned_investment_krw: equity + borrowed,
+        equity_amount_krw: equity,
+        borrowed_amount_krw: borrowed,
         annual_loan_rate: _parseAnnualRate(),
       ),
       historical_mdd_rate: widget.historicalMddRate,
@@ -396,8 +391,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
               _ContextBanner(
                 icon: Icons.show_chart,
                 message:
-                    '${widget.historicalMddSource ?? '선택한 종목'}의 과거 MDD '
-                    '${(widget.historicalMddRate! * 100).toStringAsFixed(1)}%를 시나리오에 포함합니다.',
+                    '${widget.historicalMddSource ?? '선택한 종목'}의 ${widget.instrumentCurrency == 'USD' ? '최근 3개월 ' : ''}관측 구간 MDD '
+                    '${(widget.historicalMddRate! * 100).toStringAsFixed(1)}%를 시나리오에 포함합니다. 전체 과거의 최악을 뜻하지 않습니다.',
               ),
             ],
             if (widget.instrumentCurrency == 'USD') ...[
@@ -456,12 +451,6 @@ class _StressTestScreenState extends State<StressTestScreen> {
                       onChanged: _clearResultOnEdit,
                     ),
                     _InputField(
-                      controller: _plannedInvestmentController,
-                      hint: '원',
-                      label: '총 투자 예정금액',
-                      onChanged: _clearResultOnEdit,
-                    ),
-                    _InputField(
                       controller: _equityAmountController,
                       hint: '투자금 중 본인 자금, 원',
                       label: '자기자본',
@@ -472,6 +461,10 @@ class _StressTestScreenState extends State<StressTestScreen> {
                       hint: '투자금 중 빌린 자금, 원',
                       label: '차입금',
                       onChanged: _clearResultOnEdit,
+                    ),
+                    InvestmentTotalSummary(
+                      equityController: _equityAmountController,
+                      borrowedController: _borrowedAmountController,
                     ),
                     _InputField(
                       allowDecimal: true,
@@ -553,6 +546,12 @@ class _StressTestScreenState extends State<StressTestScreen> {
                     })
                     .toList(growable: false),
               ),
+              if (_selectedScenario == ScenarioKeys.historicalMdd) ...[
+                const SizedBox(height: 8),
+                const Text(
+                  '과거 MDD는 이미 당시 환율을 반영한 원화 기준입니다. 위 환율 선택은 과거 MDD 결과에는 적용되지 않고 다른 시나리오에만 적용됩니다.',
+                ),
+              ],
             ],
             if (_errorMessage != null) ...[
               const SizedBox(height: 16),

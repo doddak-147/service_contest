@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import '../../../shared/api/api_client.dart';
 import '../../../shared/input/krw_input_formatter.dart';
 import '../../../shared/theme/app_theme.dart';
+import '../../../shared/widgets/investment_total_summary.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../stress_test/models/stress_test_models.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
@@ -33,7 +34,6 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   late final TextEditingController _emergencyFundController;
   late final TextEditingController _existingLoanBalanceController;
   late final TextEditingController _monthlyDebtPaymentController;
-  late final TextEditingController _plannedInvestmentController;
   late final TextEditingController _equityAmountController;
   late final TextEditingController _borrowedAmountController;
   late final TextEditingController _annualLoanRateController;
@@ -80,9 +80,6 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
     _monthlyDebtPaymentController = TextEditingController(
       text: initial('400,000'),
     );
-    _plannedInvestmentController = TextEditingController(
-      text: initial('10,000,000'),
-    );
     _equityAmountController = TextEditingController(text: initial('6,000,000'));
     _borrowedAmountController = TextEditingController(
       text: initial('4,000,000'),
@@ -97,7 +94,6 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
     _emergencyFundController.dispose();
     _existingLoanBalanceController.dispose();
     _monthlyDebtPaymentController.dispose();
-    _plannedInvestmentController.dispose();
     _equityAmountController.dispose();
     _borrowedAmountController.dispose();
     _annualLoanRateController.dispose();
@@ -125,6 +121,8 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
   }
 
   FinancialProfileInput _buildProfile() {
+    final equity = _parseInteger(_equityAmountController, '자기자본');
+    final borrowed = _parseInteger(_borrowedAmountController, '투자용 차입금');
     return FinancialProfileInput(
       monthly_income_krw: _parseInteger(_monthlyIncomeController, '월 소득'),
       monthly_fixed_expenses_krw: _parseInteger(
@@ -140,12 +138,9 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
         _monthlyDebtPaymentController,
         '기존 월 대출 상환액',
       ),
-      planned_investment_krw: _parseInteger(
-        _plannedInvestmentController,
-        '총 투자 예정금액',
-      ),
-      equity_amount_krw: _parseInteger(_equityAmountController, '자기자본'),
-      borrowed_amount_krw: _parseInteger(_borrowedAmountController, '투자용 차입금'),
+      planned_investment_krw: equity + borrowed,
+      equity_amount_krw: equity,
+      borrowed_amount_krw: borrowed,
       annual_loan_rate: _parseAnnualRate(),
     );
   }
@@ -182,7 +177,6 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
         _emergencyFundController,
         _existingLoanBalanceController,
         _monthlyDebtPaymentController,
-        _plannedInvestmentController,
         _equityAmountController,
         _borrowedAmountController,
         _annualLoanRateController,
@@ -353,12 +347,6 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                       onChanged: _clearResultOnEdit,
                     ),
                     _InputField(
-                      controller: _plannedInvestmentController,
-                      hint: '자기자본 + 투자용 차입금, 원',
-                      label: '총 투자 예정금액',
-                      onChanged: _clearResultOnEdit,
-                    ),
-                    _InputField(
                       controller: _equityAmountController,
                       hint: '투자금 중 본인 자금, 원',
                       label: '자기자본',
@@ -369,6 +357,10 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                       hint: '투자를 위해 새로 빌릴 금액, 원',
                       label: '투자용 차입금',
                       onChanged: _clearResultOnEdit,
+                    ),
+                    InvestmentTotalSummary(
+                      equityController: _equityAmountController,
+                      borrowedController: _borrowedAmountController,
                     ),
                     _InputField(
                       allowDecimal: true,

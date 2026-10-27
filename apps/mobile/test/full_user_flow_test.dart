@@ -44,6 +44,11 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('연결됨'),
+      200,
+      scrollable: find.byType(Scrollable).first,
+    );
     expect(find.text('연결됨'), findsOneWidget);
 
     await tester.ensureVisible(find.text('가상 예시로 체험'));

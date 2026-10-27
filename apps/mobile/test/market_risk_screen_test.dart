@@ -371,7 +371,7 @@ void main() {
     );
 
     expect(find.byType(MarketRiskCard), findsOneWidget);
-    expect(find.text('최대낙폭 (MDD)'), findsOneWidget);
+    expect(find.text('최근 3개월 MDD'), findsOneWidget);
     expect(find.text('-28.50%'), findsOneWidget);
     expect(find.text('+15.50%'), findsOneWidget);
     expect(find.text('22.30%'), findsOneWidget);

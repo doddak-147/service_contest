@@ -94,11 +94,25 @@ def test_safe_financial_words_do_not_trigger_number_rejection() -> None:
     assert "3,000,000원" in response.json()["summary"]
 
 
+def test_monthly_expense_ratio_uses_its_actual_denominator() -> None:
+    adapter = CapturingAdapter(
+        "월 고정지출 기준 {{loss_to_monthly_fixed_expenses}}에 해당합니다."
+    )
+    with make_client(adapter) as client:
+        response = client.post("/api/v1/explanations", json=valid_request())
+
+    assert response.status_code == 200
+    assert response.json()["source"] == "llm"
+    assert "월 고정지출 기준 약 2.00개월" in response.json()["summary"]
+
+
 def test_new_number_or_recommendation_falls_back_to_template() -> None:
     for unsafe_summary in (
         "손실은 4,000,000원입니다.",
         "손실은 십 퍼센트입니다. {{investment_loss_krw}}",
         "손실은 두 배입니다. {{investment_loss_krw}}",
+        "순 투자 자산의 {{loss_to_equity_ratio}}에 해당합니다.",
+        "월 고정 비용의 {{loss_to_monthly_fixed_expenses}}를 초과하지 않습니다.",
         "이 경우 매도를 추천합니다. {{investment_loss_krw}}",
         "알 수 없는 값은 {{monthly_income_krw}}입니다.",
     ):
