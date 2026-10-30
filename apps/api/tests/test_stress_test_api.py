@@ -104,6 +104,28 @@ def test_custom_return_rate_is_optional_and_validated() -> None:
     ]
 
 
+def test_production_without_market_data_still_calculates_custom_and_fx_stress() -> None:
+    request = valid_request()
+    request["exchange_rate_change_rate"] = -0.1
+    request["custom_return_rate"] = -0.175
+    app = create_app(
+        Settings(
+            app_env="production",
+            cors_origins=(),
+            stock_data_provider="disabled",
+        )
+    )
+
+    with TestClient(app) as client:
+        response = client.post("/api/v1/stress-tests/analyze", json=request)
+        market_response = client.get("/api/v1/instruments/search?q=AAPL")
+
+    assert response.status_code == 200
+    assert response.json()[-1]["scenario_key"] == "custom"
+    assert response.json()[-1]["exchange_rate_change_rate"] == -0.1
+    assert market_response.status_code == 503
+
+
 @pytest.mark.parametrize(
     ("field", "value", "expected_reason"),
     [
