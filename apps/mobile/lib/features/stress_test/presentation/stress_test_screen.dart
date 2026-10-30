@@ -9,6 +9,7 @@ import '../data/stress_test_api.dart';
 import '../models/stress_test_models.dart';
 import 'widgets/stress_test_comparison_card.dart';
 import 'widgets/leverage_comparison_card.dart';
+import 'widgets/scenario_comparison_chart.dart';
 import 'widgets/stress_test_result_card.dart';
 
 class StressTestScreen extends StatefulWidget {
@@ -623,6 +624,8 @@ class _StressTestScreenState extends State<StressTestScreen> {
                 title: '전체 시나리오 비교',
                 description: '같은 재무정보에 각 가정만 바꿔 결과를 비교합니다.',
               ),
+              const SizedBox(height: 16),
+              ScenarioComparisonChart(results: _results),
               const SizedBox(height: 16),
               StressTestComparisonCard(results: _results),
             ],
