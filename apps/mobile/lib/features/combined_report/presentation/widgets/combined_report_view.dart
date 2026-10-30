@@ -4,6 +4,7 @@ import '../../../../shared/theme/app_theme.dart';
 import '../../../financial_health/presentation/widgets/financial_health_result_card.dart';
 import '../../../market_risk/presentation/widgets/market_risk_card.dart';
 import '../../../stress_test/presentation/widgets/stress_test_comparison_card.dart';
+import '../../../stress_test/presentation/widgets/scenario_comparison_chart.dart';
 import '../../../stress_test/presentation/widgets/stress_test_result_card.dart';
 import '../../../stress_test/models/stress_test_models.dart';
 import '../../models/combined_report_models.dart';
@@ -89,6 +90,8 @@ class CombinedReportView extends StatelessWidget {
           const SizedBox(height: 16),
           _WarningCard(warnings: result.warnings),
         ],
+        const SizedBox(height: 20),
+        ScenarioComparisonChart(results: result.scenarios),
         const SizedBox(height: 20),
         Card(
           color: AppColors.surface,

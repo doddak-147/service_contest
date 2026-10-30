@@ -31,6 +31,7 @@ void main() {
       200,
       scrollable: find.byType(Scrollable).first,
     );
+    await tester.ensureVisible(find.text('내 값으로 시작'));
     await tester.tap(find.text('내 값으로 시작'));
     await tester.pumpAndSettle();
 

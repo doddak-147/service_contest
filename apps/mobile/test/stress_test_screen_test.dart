@@ -273,7 +273,13 @@ void main() {
       400,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('과거 최대낙폭 재현'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(StressTestComparisonCard),
+        matching: find.text('과거 최대낙폭 재현'),
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('같은 자기자본으로 차입 없음과 입력한 차입금을 별도 계산해 비교한다', (tester) async {

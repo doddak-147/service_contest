@@ -7,6 +7,7 @@ import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../offline_demo/offline_demo_screen.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import 'about_screen.dart';
+import 'widgets/risk_lens_illustration.dart';
 import 'widgets/server_status_card.dart';
 
 class HomeScreen extends StatelessWidget {
@@ -190,6 +191,7 @@ class _HeroBanner extends StatelessWidget {
                   ),
                 ),
               ),
+              SizedBox(width: 76, height: 56, child: RiskLensIllustration()),
             ],
           ),
           const SizedBox(height: 22),
@@ -203,7 +205,7 @@ class _HeroBanner extends StatelessWidget {
               letterSpacing: -0.6,
             ),
           ),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           Text(
             '얼마나 벌 수 있는지가 아니라, 지금의 내가 손실을 얼마나 감당할 수 있는지 계산합니다.',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
