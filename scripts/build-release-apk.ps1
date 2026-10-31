@@ -3,19 +3,23 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
+. (Join-Path $PSScriptRoot 'android-tools.ps1')
+$taskTools = Get-RiskLensAndroidTools
 $repositoryRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $mobileRoot = Join-Path $repositoryRoot 'apps\mobile'
 $propertiesPath = Join-Path $mobileRoot 'android\key.properties'
 if (-not (Test-Path -LiteralPath $propertiesPath)) {
     throw 'android/key.properties is missing. Restore the local release signing files before building.'
 }
-if (-not $ApiBaseUrl.StartsWith('https://', [StringComparison]::OrdinalIgnoreCase)) {
-    throw 'Release API_BASE_URL must use HTTPS.'
+$baseUri = $null
+if (-not [Uri]::TryCreate($ApiBaseUrl, [UriKind]::Absolute, [ref]$baseUri) -or
+    $baseUri.Scheme -ne 'https' -or $baseUri.UserInfo -or $baseUri.Query -or $baseUri.Fragment) {
+    throw 'Release API_BASE_URL must be an HTTPS base URL without credentials or query parameters.'
 }
 
 Push-Location $mobileRoot
 try {
-    & flutter build apk --release "--dart-define=API_BASE_URL=$ApiBaseUrl"
+    & $taskTools.Flutter build apk --release "--dart-define=API_BASE_URL=$ApiBaseUrl"
     if ($LASTEXITCODE -ne 0) { throw 'Flutter release build failed.' }
 } finally {
     Pop-Location
@@ -24,7 +28,7 @@ try {
 $apkPath = Join-Path $mobileRoot 'build\app\outputs\flutter-apk\app-release.apk'
 if (-not (Test-Path -LiteralPath $apkPath)) { throw 'Release APK was not produced.' }
 
-$sdkRoot = if ($env:ANDROID_HOME) { $env:ANDROID_HOME } else { Join-Path $env:LOCALAPPDATA 'Android\sdk' }
+$sdkRoot = $taskTools.SdkRoot
 $signer = Get-ChildItem -LiteralPath (Join-Path $sdkRoot 'build-tools') -Directory |
     Sort-Object { [Version]$_.Name } -Descending |
     ForEach-Object { Join-Path $_.FullName 'apksigner.bat' } |
@@ -44,6 +48,15 @@ try {
 
 $outputDirectory = Join-Path $repositoryRoot 'output\apk'
 New-Item -ItemType Directory -Path $outputDirectory -Force | Out-Null
-$outputPath = Join-Path $outputDirectory 'RiskLens-Android-1.0.0.apk'
+$versionLine = Get-Content -LiteralPath (Join-Path $mobileRoot 'pubspec.yaml') |
+    Where-Object { $_ -match '^version:\s+(\d+\.\d+\.\d+)\+\d+\s*$' } |
+    Select-Object -First 1
+if (-not $versionLine) {
+    throw 'The Android package version could not be read.'
+}
+$versionMatch = [regex]::Match($versionLine, '^version:\s+(\d+\.\d+\.\d+)\+\d+\s*$')
+if (-not $versionMatch.Success) { throw 'The Android package version is invalid.' }
+$packageVersion = $versionMatch.Groups[1].Value
+$outputPath = Join-Path $outputDirectory "RiskLens-Android-$packageVersion.apk"
 Copy-Item -LiteralPath $apkPath -Destination $outputPath -Force
 Get-FileHash -LiteralPath $outputPath -Algorithm SHA256 | Select-Object Path, Hash

@@ -11,14 +11,16 @@ if ($listener) {
 }
 
 try {
-    $null = Read-Host 'Copy ONLY the Twelve Data key, then press Enter' -AsSecureString
+    $null = Read-Host 'Copy ONLY the Twelve Data key to the clipboard now; press Enter WITHOUT pasting' -AsSecureString
     $env:TWELVE_DATA_API_KEY = ([string](Get-Clipboard -Raw)).Trim()
+    try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
     if ($env:TWELVE_DATA_API_KEY -notmatch '^[A-Za-z0-9]{24,64}$') {
         throw 'Twelve Data key format is invalid. Copy only the key, not a command or URL.'
     }
 
-    $null = Read-Host 'Copy ONLY the OpenAI API key, then press Enter' -AsSecureString
+    $null = Read-Host 'Copy ONLY the OpenAI key to the clipboard now; press Enter WITHOUT pasting' -AsSecureString
     $env:LLM_API_KEY = ([string](Get-Clipboard -Raw)).Trim()
+    try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
     if ($env:LLM_API_KEY -notmatch '^sk-[A-Za-z0-9_-]{16,}$') {
         throw 'OpenAI key format is invalid. Copy only the key, not a command or URL.'
     }

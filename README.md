@@ -18,6 +18,7 @@ Twelve Data 연동은 현재 로컬 소스에만 반영되어 있으며 운영 �
 2026-10-27 개인 Twelve Data 키를 사용한 로컬 API와 USB 연결 Android 실기기에서 SPY·QQQ ETF 검색 및 과거 위험 화면을 확인했습니다. 이 확인은 `adb reverse`로 연결한 로컬 디버그 빌드에 한하며, USB 연결을 해제한 뒤에도 동작하는 공개 배포 검증은 아닙니다.
 2026-10-31 운영 API의 Stress Test 요청·계산 파일 3개를 갱신하고, 공개 HTTPS에서 기존 요청과 환율 충격·직접 입력 요청이 모두 HTTP 200인 것을 확인했습니다. 클라우드 연결 Android 실기기에서 가상 재무 예시의 `-17.5%` 직접 입력 결과(투자 예정금액 1,000만 원, 예상 손실 175만 원)를 확인했습니다.
 2026-11-01 공개 종목 API 차단과 나머지 API의 정상 응답을 외부에서 확인했습니다. 서명된 Android 설치본에서도 종목 검색 시 차단 사유를 표시하고, 서버 요청이 없는 완전 가상 체험은 사용할 수 있습니다.
+최근 변경을 검토용 `feature/foundation-release-integration`에 통합했습니다. 1.0.1 서명 설치본을 실기기에 설치했고, 장애·복구 검증과 운영 로그 검사 결과는 [QA 기록](docs/QA_REVIEW.md)에 있습니다. 비공개 시연은 [실행 절차](docs/DEMO_RUNBOOK.md), 설치본과 서명 파일은 [릴리스 안내](docs/RELEASE_APK.md)를 따릅니다.
 
 ## 프로젝트 구조
 
@@ -46,22 +47,13 @@ python -m pip install -r apps/api/requirements-dev.txt
 
 서버 설정은 프로세스 환경변수로 주입합니다. 종목 API 기본값은 `disabled`이며, `STOCK_DATA_PROVIDER=twelve`와 `TWELVE_DATA_API_KEY`를 함께 설정해야 미국 상장 주식·ETF 조회가 동작합니다. Basic 요금제의 비공개 시연에만 사용하며 현재 `APP_ENV=production`에서는 Twelve 설정을 거부합니다. 공개 서버에는 접근 제한 전까지 적용하지 않습니다. OpenAI 연결 시에는 `LLM_PROVIDER`, `LLM_API_URL`, `LLM_API_KEY`, `LLM_MODEL`을 설정합니다. 실제 키는 Git과 모바일 코드에 넣지 않습니다.
 
-로컬 PowerShell에서 API 키를 명령 기록에 남기지 않고 한 터미널 세션에만 설정하려면 다음을 실행합니다. 키는 화면에 표시되지 않으며 같은 터미널에서 API를 시작해야 합니다.
-
-```powershell
-$tdSecureKey = Read-Host 'Twelve Data API key' -AsSecureString
-$env:TWELVE_DATA_API_KEY = [System.Net.NetworkCredential]::new('', $tdSecureKey).Password
-$env:STOCK_DATA_PROVIDER = 'twelve'
-Remove-Variable tdSecureKey
-```
-
-실기기 비공개 시연에서 주가 데이터와 AI 설명을 함께 켜려면 기존 API를 `Ctrl+C`로 중지하고 저장소 루트에서 아래 스크립트를 실행합니다. 각 안내가 나오면 **해당 API 키 문자열만 클립보드에 복사한 뒤 Enter**를 누릅니다. 보안 입력창에 키를 붙여넣을 필요는 없습니다. 스크립트가 클립보드에서 키를 읽으며, 키는 파일·명령 기록에 저장하지 않고 서버가 끝나면 프로세스 환경변수에서 제거합니다. 서버가 시작된 뒤 다른 일반 텍스트를 복사하면 클립보드에 남은 키도 지울 수 있습니다. OpenAI API 사용량은 별도 과금될 수 있습니다.
+실기기 비공개 시연에서 주가 데이터와 AI 설명을 함께 켜려면 기존 API를 `Ctrl+C`로 중지하고 저장소 루트에서 아래 스크립트를 실행합니다. 각 안내가 나온 **다음** 해당 API 키 문자열만 클립보드에 복사하고 터미널에서 붙여넣지 않은 채 Enter를 누릅니다. 스크립트가 클립보드에서 키를 읽은 뒤 비우며, 키는 파일·명령 기록에 저장하지 않고 서버가 끝나면 프로세스 환경변수에서 제거합니다. OpenAI API 사용량은 별도 과금될 수 있습니다.
 
 ```powershell
 .\scripts\start-local-api.ps1
 ```
 
-이 스크립트는 개발 모드의 로컬 `127.0.0.1:8000` 서버만 시작합니다. 휴대폰에서는 USB `adb reverse tcp:8000 tcp:8000` 연결이 필요합니다. AI가 설정되지 않거나 제공자 오류·안전성 검증 실패가 발생하면 API는 계산값을 유지하고 검증된 기본 설명과 사유를 반환합니다. 공개 Naver Cloud 서버에는 Twelve Data Basic을 연결하지 않습니다.
+이 스크립트는 개발 모드의 로컬 `127.0.0.1:8000` 서버만 시작합니다. 두 번째 PC 터미널에서 `.\scripts\run-private-demo.ps1`을 실행하면 도구·휴대폰·서버를 확인하고 USB 연결과 앱 실행을 수행합니다. 상세 순서는 [시연 실행 절차](docs/DEMO_RUNBOOK.md)를 따릅니다. AI가 설정되지 않거나 제공자 오류·안전성 검증 실패가 발생하면 API는 계산값을 유지하고 검증된 기본 설명과 사유를 반환합니다. 공개 Naver Cloud 서버에는 Twelve Data Basic을 연결하지 않습니다.
 
 ## 실행
 
@@ -69,7 +61,7 @@ Remove-Variable tdSecureKey
 
 ```powershell
 .\.venv\Scripts\Activate.ps1
-python -m uvicorn app.main:app --app-dir apps/api --reload --host 0.0.0.0 --port 8000
+python -m uvicorn app.main:app --app-dir apps/api --reload --host 127.0.0.1 --port 8000
 ```
 
 Android 에뮬레이터는 기본적으로 `http://10.0.2.2:8000`을 사용합니다.
@@ -106,13 +98,17 @@ Twelve Data 측 답변에 따라 Basic 계정은 비공개 심사 시연에만 �
 
 ```powershell
 cd apps/mobile
-dart format --output=none --set-exit-if-changed lib test
+dart format --output=none --set-exit-if-changed lib test integration_test
 flutter analyze
 flutter test
 
+cd ../api
+python -m ruff check .
+python -m pytest
+
 cd ../..
-python -m ruff check apps/api
-python -m pytest -c apps/api/pyproject.toml apps/api/tests
+python -m ruff check --config apps/api/pyproject.toml scripts
+python -m pytest -c apps/api/pyproject.toml scripts/tests
 ```
 
 개발 전에는 [AGENTS.md](AGENTS.md), [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [API_CONTRACT.md](docs/API_CONTRACT.md)를 확인합니다. 주가 데이터 검산 기준은 [MARKET_DATA_VALIDATION.md](docs/MARKET_DATA_VALIDATION.md)를 따릅니다.
