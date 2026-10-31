@@ -22,7 +22,8 @@ try {
         Remove-Item Env:\TWELVE_DATA_API_KEY -ErrorAction SilentlyContinue
     }
 
-    & $python (Join-Path $repositoryRoot 'scripts\validate-market-data.py')
+    Write-Host 'Running private validation checks. Request pacing can take about two minutes.'
+    & $python -u (Join-Path $repositoryRoot 'scripts\validate-market-data.py')
     if ($LASTEXITCODE -ne 0) { throw 'Market data validation failed.' }
 } finally {
     if ($null -eq $previousKey) {
