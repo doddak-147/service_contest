@@ -1,5 +1,9 @@
 # 실기기 QA와 사용자 검토
 
+## 2026-11-01 검토용 버전 통합
+
+`feature/foundation-release-integration`에 공개 종목 API 차단, 독립 데이터 검증, 서명된 release 빌드, QA 기록을 모았다. 통합 직후 API·검사 도구 테스트 133개, Flutter 테스트 63개, `flutter analyze`, API와 스크립트 Ruff를 통과했다. 생성 APK는 PC의 `output/apk/`에 보관하고 이후 Git 추적에서는 제외했다. 기존 커밋 이력은 다시 쓰지 않았다. 기본 브랜치 병합은 저장소 규칙에 따른 다른 담당자 리뷰 후 진행한다.
+
 ## 2026-10-31 확인 결과
 
 기기: Samsung SM-S906N, Android 16. 검증용 로컬 서버는 실제 시세와 인증정보를 사용하지 않고 503 오류만 반환했다.

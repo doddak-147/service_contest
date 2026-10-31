@@ -102,7 +102,8 @@ async def main() -> None:
             for point in points
         )
         print(
-            "PASS: KRW return, MDD, volatility and FX date agree with independent arithmetic"
+            "PASS: KRW return, MDD, volatility and FX date "
+            "agree with independent arithmetic"
         )
 
         private_key = os.environ.get("TWELVE_DATA_API_KEY", "").strip()
@@ -139,11 +140,13 @@ async def main() -> None:
                 amazon_closes[date(2022, 6, 6)] / amazon_closes[date(2022, 6, 3)] - 1
             ) < Decimal("0.2")
             print(
-                "PASS: second stock (AMZN) split-adjusted closes match independent filings"
+                "PASS: second stock (AMZN) split-adjusted closes "
+                "match independent filings"
             )
         else:
             print(
-                "SKIP: second stock requires private API key in this shell's environment"
+                "SKIP: second stock requires private API key "
+                "in this shell's environment"
             )
 
 
