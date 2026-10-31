@@ -10,13 +10,14 @@ if (-not (Test-Path -LiteralPath $python)) {
 $previousKey = $env:TWELVE_DATA_API_KEY
 try {
     if (-not $PublicOnly) {
-        $secureKey = Read-Host 'Paste ONLY the Twelve Data API key, then press Enter' -AsSecureString
-        $privateKey = [System.Net.NetworkCredential]::new('', $secureKey).Password.Trim()
+        Read-Host 'Copy ONLY the Twelve Data key to the clipboard now, then press Enter without pasting' -AsSecureString | Out-Null
+        $privateKey = (Get-Clipboard -Raw).Trim()
         if ($privateKey -notmatch '^[A-Fa-f0-9]{32}$') {
-            throw 'The key format is invalid. Copy only the 32-character key, without commands or labels.'
+            throw 'The clipboard does not contain a 32-character API key. Copy only the key after this prompt appears.'
         }
         $env:TWELVE_DATA_API_KEY = $privateKey
-        Remove-Variable secureKey, privateKey
+        try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
+        Remove-Variable privateKey
     } else {
         Remove-Item Env:\TWELVE_DATA_API_KEY -ErrorAction SilentlyContinue
     }
