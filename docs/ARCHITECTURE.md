@@ -92,8 +92,8 @@ LLM 출력은 문자열 설명이며 권위 있는 데이터 모델에 다시 �
 - 주가·LLM API key는 서버 환경변수에만 두며 모바일에는 공개 `API_BASE_URL`만 전달한다. Native Flutter 요청에는 브라우저 CORS가 필요하지 않아 운영 기본 허용 origin은 비워 둔다.
 - 외부 API에는 timeout을 적용한다. 요청 로그에는 재무 원본과 LLM payload를 남기지 않고 오류 로그에서도 secret을 마스킹한다.
 
-현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다. `APP_ENV=production`에서는 Twelve Data Basic 설정을 거부해 공개 운영 API로의 실수 배포를 막는다.
-현재 공개 운영 서버는 이 로컬 변경을 아직 반영하지 않았다. Twelve Data Basic의 비공개 심사 시연 범위를 넘지 않도록 공개 종목 API에 접근 제한을 마련하기 전에는 Twelve 설정으로 배포하지 않는다. 공개 PDF에는 Twelve Data 실데이터 또는 그 파생 수치를 넣지 않는다.
+현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다. 저장소의 최신 API 소스는 `APP_ENV=production`에서 Twelve Data Basic 설정을 거부한다. 이 안전 경계는 아직 공개 운영 서버에 배포되지 않았다.
+현재 공개 운영 서버는 `/opt/service-contest/app`을 `service-contest-api.service`로 실행한다. 2026-10-31 Stress Test의 `calculation.py`, `router.py`, `schemas.py`만 갱신해 환율 충격과 직접 입력 시나리오를 반영했다. 나머지 로컬 변경, 특히 Twelve Data 종목 연동은 아직 운영 서버에 반영하지 않았다. Twelve Data Basic의 비공개 심사 시연 범위를 넘지 않도록 공개 종목 API에 접근 제한을 마련하기 전에는 Twelve 설정으로 배포하지 않는다. 공개 PDF에는 Twelve Data 실데이터 또는 그 파생 수치를 넣지 않는다.
 
 ## 7. MVP 이후 확장
 
