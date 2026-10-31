@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:financial_shock_preview/shared/api/api_client.dart';
@@ -6,6 +7,42 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 void main() {
+  testWidgets('서버의 30초 대기 뒤 기본 설명 응답을 받는다', (tester) async {
+    final pending = Completer<http.Response>();
+    final apiClient = ApiClient(client: MockClient((_) => pending.future));
+    addTearDown(apiClient.close);
+    final response = apiClient.getJson('/health');
+    await tester.pump(const Duration(seconds: 31));
+    pending.complete(http.Response('{"status":"ok"}', 200));
+    await tester.pump();
+    expect(await response, {'status': 'ok'});
+  });
+
+  testWidgets('지속되는 응답 지연은 시간 초과 처리하고 다음 요청은 복구한다', (tester) async {
+    final pending = Completer<http.Response>();
+    var calls = 0;
+    final apiClient = ApiClient(
+      client: MockClient((_) {
+        calls++;
+        return calls == 1
+            ? pending.future
+            : Future.value(http.Response('{"status":"ok"}', 200));
+      }),
+    );
+    addTearDown(apiClient.close);
+    final failed = expectLater(
+      apiClient.getJson('/health'),
+      throwsA(
+        isA<ApiException>().having((e) => e.code, 'code', 'REQUEST_TIMEOUT'),
+      ),
+    );
+    await tester.pump(const Duration(seconds: 41));
+    await failed;
+    expect(await apiClient.getJson('/health'), {'status': 'ok'});
+    pending.complete(http.Response('{"status":"old"}', 200));
+    await tester.pump();
+  });
+
   test('GET /health 응답을 읽는다', () async {
     final apiClient = ApiClient(
       client: MockClient((request) async {
