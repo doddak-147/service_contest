@@ -17,6 +17,10 @@ htmlcov/
 .env
 .env.*
 !.env.example
+apps/mobile/android/key.properties
+*.jks
+*.keystore
+*.p12
 
 # IDE and operating system
 .DS_Store
