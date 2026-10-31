@@ -142,7 +142,7 @@ class _QuickStartCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '예시는 재무 입력만 가상입니다. 종목을 선택하면 실제 과거 시세가 사용될 수 있습니다.',
+              '예시는 재무 입력만 가상입니다. 실제 과거 시세는 비공개 시연 환경에서만 사용되며 공개 운영 API에서는 제공되지 않습니다.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

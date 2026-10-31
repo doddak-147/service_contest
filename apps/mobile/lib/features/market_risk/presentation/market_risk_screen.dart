@@ -271,8 +271,8 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    '현재 실제 시세 분석은 미국 상장 주식과 ETF를 지원합니다. '
-                    '국내 종목 시세는 제공하지 않습니다.',
+                    '실제 시세 분석은 비공개 시연 환경에서 미국 상장 주식과 ETF만 지원합니다. '
+                    '공개 운영 API에서는 종목 데이터가 제공되지 않습니다. 국내 종목 시세도 제공하지 않습니다.',
                   ),
                   const SizedBox(height: 8),
                   const Text('ETF는 지수 자체가 아니며 배당을 제외한 시장가격 변동만 분석합니다.'),

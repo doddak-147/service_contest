@@ -285,7 +285,7 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
                       _usingExampleValues
                           ? '미리 채운 재무 수치는 실제 사람의 정보가 아닙니다. '
                                 '${_exampleEdited ? '일부 값을 수정했습니다. ' : ''}'
-                                '이후 종목을 선택하면 실제 과거 시세가 사용될 수 있습니다.'
+                                '실제 과거 시세는 비공개 시연 환경에서만 사용됩니다.'
                           : '예시 수치는 넣지 않았습니다. 해당 없는 항목에는 0을 입력해 주세요. 입력값은 서버에 저장하지 않습니다.',
                     ),
                     if (_usingExampleValues) ...[
