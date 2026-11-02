@@ -16,6 +16,8 @@
 
 현재 공모전 시연용 운영 Base URL은 `https://service-contest-2026-api.duckdns.org`이다. 로컬 주소와 운영 주소는 환경에 따라 달라지지만 아래 path와 JSON 계약은 동일하다. `/health`는 인프라 상태 확인용이므로 `/api/v1` 밖에 둔다.
 
+2026-11-02 운영 release `api-1.2.0-ada4794dbbd6`에서 현금흐름(5절)과 AI 문제(7절)의 응답을 확인했다. 공개 운영은 시세 provider를 disabled로 강제하며 종목 검색·과거 위험/가격 이력·결합 분석은 Nginx에서 `MARKET_DATA_UNAVAILABLE` JSON 503을 반환한다. 해당 계약의 실제 시세 성공 응답은 비공개 로컬 시연에서만 사용한다. 배포는 기존 요청·응답 필드를 바꾸지 않는다.
+
 ## 2. 공통 타입
 
 아래 표기가 권위 있는 wire type이다. `date`와 `datetime`은 위 형식의 JSON 문자열이다.
@@ -377,7 +379,7 @@ LLM에 전달 가능한 최소 결과만 받는다.
 
 ## 5. 현금흐름·생활 충격 확장 (2026-11-02)
 
-영향 범위: financial-health의 기존 입력을 재사용하고 stress-test가 계산·화면을 소유한다. market-risk의 평가손익과 현금을 분리하며 combined-report·LLM의 기존 요청·응답은 변경하지 않는다. 이 확장은 새 엔드포인트이며 기존 서버에는 배포 전까지 존재하지 않는다.
+영향 범위: financial-health의 기존 입력을 재사용하고 stress-test가 계산·화면을 소유한다. market-risk의 평가손익과 현금을 분리하며 combined-report·LLM의 기존 요청·응답은 변경하지 않는다. 2026-11-02 운영 서버에 이 새 엔드포인트를 배포했다.
 
 ### `POST /api/v1/stress-tests/cash-flow`
 

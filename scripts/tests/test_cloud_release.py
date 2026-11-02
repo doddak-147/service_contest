@@ -114,7 +114,8 @@ def test_rollback_restores_exact_previous_override_before_restart(
 def test_override_forces_production_provider_off_after_environment_file() -> None:
     text = MODULE["service_override"](Path("/opt/service-contest/releases/fictional"))
     assert (
-        "ExecStart=\nExecStart=/usr/bin/env APP_ENV=production STOCK_DATA_PROVIDER=disabled "
+        "ExecStart=\nExecStart=/usr/bin/env APP_ENV=production "
+        "STOCK_DATA_PROVIDER=disabled "
         in text
     )
     assert "--host 127.0.0.1 --port 8000" in text

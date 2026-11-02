@@ -1,6 +1,8 @@
 # 공개 종목 API 임시 차단
 
-운영 서버에 기존 시세 제공자 코드가 남아 있는 동안 `market-data-gate.conf`를 공개 HTTPS `server` 블록에 포함한다. 이 설정은 종목 검색, 과거 위험, 결합 분석의 공개 요청에 JSON 503을 반환한다. `/health`, 금융체력, 고정 Stress Test, 쉬운 설명은 계속 FastAPI로 전달한다. Twelve Data Basic을 공개 서버에서 켜지 않는다.
+`market-data-gate.conf`를 공개 HTTPS `server` 블록에 포함한다. 이 설정은 종목 검색, 과거 위험·가격 이력, 결합 분석의 공개 요청에 JSON 503을 반환한다. `/health`, 금융체력, 고정 Stress Test, 현금흐름, 위험 이해 문제, 쉬운 설명은 계속 FastAPI로 전달한다. Twelve Data Basic을 공개 서버에서 켜지 않는다.
+
+2026-11-02 최신 API의 [버전 배포](../cloud/README.md) 후에도 이 차단을 유지했다. 애플리케이션은 production·시세 disabled로 실행하며 외부 HTTPS에서 검색·가격 이력·결합 분석의 JSON 503과 no-store를 다시 확인했다.
 
 2026-11-01 운영 서버에 적용했다. 적용 전 사이트 설정은 `/etc/nginx/sites-available/service-contest-api.bak-20261101`에 백업했다. `nginx -t`와 reload가 성공했고, 외부 요청에서 종목 세 경로는 503 `MARKET_DATA_UNAVAILABLE`, `/health`·금융체력·고정 Stress Test는 200, 설명 API의 잘못된 입력은 422로 확인했다. Android 릴리스 설치본에서도 검색 차단 사유가 표시됐다.
 

@@ -5,7 +5,7 @@
 | 방식 | 연결 | 종목 데이터 |
 | --- | --- | --- |
 | 비공개 심사 시연 | 개발 PC 로컬 API + USB 연결 디버그 앱 | Twelve Data Basic + ECB, 비공개 범위 |
-| 운영 서버 연결 설치본 | HTTPS Naver Cloud | 종목 API 중단 안내, 금융체력·고정 Stress Test 사용 |
+| 운영 서버 연결 설치본 | HTTPS Naver Cloud, USB/PC 서버 불필요 | 종목 API 중단 안내, 금융체력·고정 Stress Test·현금흐름/생활 충격·A/B·AI 가상 문제 |
 | 완전 가상 체험 | 서버 연결 불필요 | 명시된 가상값, 실제 시세·환율·AI 요청 없음 |
 
 공개될 수 있는 화면 자료에는 완전 가상 체험을 사용한다. 비공개 심사 시연은 제공자에게 받은 이용 범위에 따라 진행한다.
@@ -56,4 +56,6 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 .\scripts\build-release-apk.ps1
 ```
 
-현재 출력은 `output/apk/RiskLens-Android-1.2.0.apk`다. 운영 주소에는 공개 종목 데이터 차단이 적용되어 있고 새 현금흐름 API는 아직 배포되지 않았다. 이 설치본에서는 새 기능의 완전 가상 사례를 사용할 수 있다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
+현재 출력은 `output/apk/RiskLens-Android-1.2.0.apk`다. 2026-11-02 운영 서버에 현금흐름·AI 문제 API를 배포했고 공개 종목 데이터 차단은 유지한다. 이 설치본은 인터넷이 있으면 PC 서버·USB 없이 직접 입력 현금흐름과 AI 가상 문제를 사용할 수 있다. 인터넷이 없으면 완전 가상 체험과 자체 문제를 사용한다. 서버 연결 상태 확인과 선택한 기능의 API 호출을 구분한다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
+
+운영 코드를 갱신할 때는 [버전 배포 절차](../deploy/cloud/README.md)를 따른다. 실패 시 출력된 rollback 명령을 서버 SSH 터미널에서 사용한다. API 키·환경파일을 개발 PC나 Google Drive로 복사하지 않는다.

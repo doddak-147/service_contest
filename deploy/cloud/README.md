@@ -20,4 +20,14 @@ OpenSSH가 서버 비밀번호를 여러 번 요청할 수 있다. 비밀번호�
 
 성공 시 출력되는 `Rollback: python3 ... --rollback ...` 명령을 서버 SSH 터미널에 보관한다. 수동 복구는 해당 배포의 drop-in이 현재와 일치할 때만 허용한다. 원본 앱과 이전 배포는 자동 삭제하지 않는다. `/tmp`의 실행 도구가 삭제되면 같은 도구를 다시 업로드한 뒤 `--rollback <release_id>`로 실행한다.
 
-배포 후 외부 HTTPS와 Android 설치본 검증은 별도로 수행한다. 종목 검색·과거 위험·결합 분석에 대한 기존 Nginx 차단은 유지한다. 새 현금흐름·위험 이해 API만으로 실제 주가가 공개되지는 않는다. 이 문서의 배포 절차 준비는 실제 서버 배포 완료를 의미하지 않는다.
+배포 후 외부 HTTPS와 Android 설치본 검증은 별도로 수행한다. 종목 검색·과거 위험·결합 분석에 대한 기존 Nginx 차단은 유지한다. 새 현금흐름·위험 이해 API만으로 실제 주가가 공개되지는 않는다.
+
+## 확인한 운영 release
+
+2026-11-02 `api-1.2.0-ada4794dbbd6`를 배포했다. 소스 commit은 `ada4794dbbd6f3c99018814d2f542f0500f27f55`, 패키지 SHA-256은 `5178e9f12d399e3c57484e0f3b27caf909401810d17312a5b918fabd6832ca43`다. 임시·운영 서비스 모두 현금흐름 산술·기존 Stress Test·시세 disabled·AI 5문제(`source=llm`, 대체 사유 없음)를 통과했다. 외부 HTTPS에서도 같은 계산과 종목 차단을 확인했다. 검증 범위는 [QA 기록](../../docs/QA_REVIEW.md)을 따른다.
+
+이 배포의 복구 명령은 서버 SSH에서 실행한다.
+
+```bash
+python3 /tmp/risk-lens-5178e9f12d399e3c/apply-release.py --rollback api-1.2.0-ada4794dbbd6
+```

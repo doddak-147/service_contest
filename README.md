@@ -4,7 +4,7 @@
 
 ## 현재 상태
 
-현재 최신 API의 클라우드 배포와 USB 연결 없는 설치본 검증, Google Drive 서명 백업을 진행하고 있습니다. 배포는 [버전 배포 절차](deploy/cloud/README.md)를 사용하며 기존 서버 코드와 실제 키를 보존합니다. 아래 날짜별 기록은 완료한 범위만 나타냅니다.
+2026-11-02 기준 최신 API를 클라우드에 배포하고 외부 HTTPS 검증을 마쳤습니다. Android 설치본의 연결 검증과 Google Drive 서명 백업은 진행 중입니다. 완료 범위는 [QA 기록](docs/QA_REVIEW.md)에 구분해 남깁니다.
 
 | 영역 | 구현 상태 |
 |---|---|
@@ -12,20 +12,21 @@
 | 계산 API | FastAPI/Python 결정론적 계산 구현 완료 |
 | 주가 데이터 | 로컬 소스는 Twelve Data 미국 상장 주식·ETF 일별 시세와 ECB 참고 환율을 결합한 원화 기준 과거 위험 분석. 국내 시세와 지수 자체는 현재 미지원 |
 | 쉬운 설명 | OpenAI-compatible LLM 연결, 검증 실패 시 정적 template 대체 |
+| 현금흐름·생활 충격 | 3·6·12개월, 이자·원금 상환·현금 잔액, 소득·생활비·금리 충격, 화면 내 A·B 비교 |
+| 위험 이해 체험 | 8주제에서 한 번에 5문제, 정답·오답 표시, AI 제목·도입과 서버의 검증된 가상 계산 |
 | 배포 | Naver Cloud + Nginx + HTTPS 운영 중 |
 | 저장 | 로그인·DB·서버 분석 이력 없음 |
 
 운영 상태는 <https://service-contest-2026-api.duckdns.org/health>에서 확인할 수 있습니다.
-Twelve Data 연동은 현재 로컬 소스에만 반영되어 있으며 운영 서버에는 배포되지 않았습니다. 운영 서버의 Stress Test 계산 모듈에는 환율 충격과 직접 입력 시나리오를 반영했지만, 종목 분석 모듈은 이전 버전입니다. 2026-11-01부터 Nginx가 공개 종목 검색·과거 위험·결합 분석 API를 JSON 503으로 차단합니다. 공개 서버의 금융체력·고정 Stress Test·쉬운 설명·상태 확인은 계속 동작합니다. 비공개 시연용 로컬 Twelve Data 결과를 운영 결과와 혼동하지 마세요.
-2026-10-27 개인 Twelve Data 키를 사용한 로컬 API와 USB 연결 Android 실기기에서 SPY·QQQ ETF 검색 및 과거 위험 화면을 확인했습니다. 이 확인은 `adb reverse`로 연결한 로컬 디버그 빌드에 한하며, USB 연결을 해제한 뒤에도 동작하는 공개 배포 검증은 아닙니다.
-2026-10-31 운영 API의 Stress Test 요청·계산 파일 3개를 갱신하고, 공개 HTTPS에서 기존 요청과 환율 충격·직접 입력 요청이 모두 HTTP 200인 것을 확인했습니다. 클라우드 연결 Android 실기기에서 가상 재무 예시의 `-17.5%` 직접 입력 결과(투자 예정금액 1,000만 원, 예상 손실 175만 원)를 확인했습니다.
-2026-11-01 공개 종목 API 차단과 나머지 API의 정상 응답을 외부에서 확인했습니다. 서명된 Android 설치본에서도 종목 검색 시 차단 사유를 표시하고, 서버 요청이 없는 완전 가상 체험은 사용할 수 있습니다.
-최근 변경을 검토용 `feature/foundation-release-integration`에 통합했습니다. 1.0.1 서명 설치본을 실기기에 설치했고, 장애·복구 검증과 운영 로그 검사 결과는 [QA 기록](docs/QA_REVIEW.md)에 있습니다. 비공개 시연은 [실행 절차](docs/DEMO_RUNBOOK.md), 설치본과 서명 파일은 [릴리스 안내](docs/RELEASE_APK.md)를 따릅니다.
+운영 release는 `api-1.2.0-ada4794dbbd6`이며 [버전 배포 절차](deploy/cloud/README.md)로 반영했습니다. 금융체력·고정 Stress Test·월별 현금흐름·AI 5문제는 외부 HTTPS에서 검증했습니다. 문제 API는 `source=llm`, 대체 사유 없음으로 응답했습니다. 운영 실행은 `APP_ENV=production`, `STOCK_DATA_PROVIDER=disabled`를 강제합니다. 종목 검색·과거 위험·가격 그래프·결합 분석은 기존 Nginx 차단을 유지해 JSON 503을 반환합니다. 소스 배포와 실제 시세 제공 재개는 다른 작업입니다.
 
-2026-11-02 로컬 소스에 3·6·12개월 현금흐름, 생활 충격 복합 시나리오, 원화·달러 가격/MDD 그래프, 화면 내 가정 A·B 비교, 네 가지 위험 이해 체험을 추가했습니다. 월별 현금과 투자 평가손익을 구분하며 원금 상환·누적 이자를 표시합니다. 홈에서 현금흐름과 위험 이해 체험에 진입할 수 있고, 완전 가상 체험에도 새 그래프와 비교가 포함됩니다. 새 API는 운영 서버 배포 전이므로 클라우드 연결 설치본에서는 가상 체험을 이용하세요. 계약·계산·화면·검증 범위는 [기능 확장 기록](docs/FEATURE_EXPANSION.md)을 따릅니다.
-같은 날 Android 실기기 확장 기능 통합 테스트 4개를 통과하고 1.1.0 서명 설치본을 설치했습니다. 운영 HTTPS 연결과 공개용 가상 그래프·비교·이해 체험 화면도 확인했습니다. 캡처와 검증 한계는 [QA 기록](docs/QA_REVIEW.md)에 있습니다.
+| 사용 방식 | 사용할 수 있는 범위 |
+| --- | --- |
+| 운영 HTTPS 설치본 | 재무 계산, 고정 Stress Test, 직접 입력 현금흐름·생활 충격·A/B, AI 가상 문제 |
+| 비공개 로컬 시연 | 위 기능과 Twelve Data 미국 주식·ETF 검색·과거 위험·가격 그래프·결합 Report |
+| 완전 가상 오프라인 체험 | 실제 시세에서 유래하지 않은 고정 가상 재무·종목·그래프·현금흐름·자체 문제, 분석 API 무호출 |
 
-1.2.0에서는 현금흐름 입력 영역의 잘림·스크롤 후 접힘을 수정하고, 위험 이해 체험을 정답·오답 표시가 있는 5문제 묶음으로 확장했습니다. AI 요청 시 서버의 가상 계산 문제에 LLM의 제목·상황 문구를 붙입니다. 설정·네트워크 오류 시 자체 문제로 이어집니다. 새 API는 로컬 소스에 반영되어 있으며 운영 서버 배포는 별도 작업입니다. 클립보드 읽기 오류가 발생하면 `.\scripts\start-local-api.ps1 -PasteKeys`로 기존 OpenAI 키를 숨김 입력창에 붙여넣을 수 있습니다.
+1.2.0(`versionCode=4`) 서명 APK는 `output/apk/RiskLens-Android-1.2.0.apk`입니다. 입력칸 잘림과 스크롤 후 접힘을 수정하고 정답·오답 표시가 있는 5문제 체험을 반영했습니다. 비공개 시연은 [실행 절차](docs/DEMO_RUNBOOK.md), 설치본과 서명 백업은 [릴리스 안내](docs/RELEASE_APK.md), 구현·검증 이력은 [기능 확장 기록](docs/FEATURE_EXPANSION.md)을 따릅니다. 검토 브랜치는 `feature/foundation-learning-quiz`이며 `main` 병합은 별도 리뷰 대상입니다.
 
 ## 프로젝트 구조
 
@@ -115,6 +116,7 @@ python -m pytest
 
 cd ../..
 python -m ruff check --config apps/api/pyproject.toml scripts
+python -m ruff check --config apps/api/pyproject.toml deploy/cloud
 python -m pytest -c apps/api/pyproject.toml scripts/tests
 ```
 

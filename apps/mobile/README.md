@@ -24,6 +24,8 @@ flutter run -d <DEVICE_ID> --dart-define=API_BASE_URL=https://service-contest-20
 
 FastAPI 요청·응답 DTO는 [API_CONTRACT.md](../../docs/API_CONTRACT.md)의 필드명과 타입을 그대로 사용합니다.
 
+현재 서명 설치본은 1.2.0(`versionCode=4`)입니다. 운영 HTTPS에서는 금융체력·고정 Stress Test·현금흐름/생활 충격·A/B·AI 5문제를 제공합니다. 실제 미국 주식·ETF의 과거 위험·가격 그래프·결합 Report는 비공개 로컬 시연에서만 사용합니다. 운영 설치본에는 PC 서버나 USB 연결이 필요하지 않습니다. 설치·백업은 [RELEASE_APK.md](../../docs/RELEASE_APK.md), 환경별 절차는 [DEMO_RUNBOOK.md](../../docs/DEMO_RUNBOOK.md)를 따릅니다.
+
 # 공개 자료용 오프라인 체험
 
 홈의 `오프라인 체험 · 완전 가상`은 미리 작성한 가상기업 A와 가상 재무 사례를 3단계로 보여줍니다. 이 화면에서는 시장 데이터·환율·AI·분석 API를 호출하지 않으며, 네트워크가 끊겨도 사용할 수 있습니다. 결과는 실제 분석이 아니라 설명용 고정 예시입니다.

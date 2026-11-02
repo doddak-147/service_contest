@@ -66,7 +66,7 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 ### ScenarioResult
 
-`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd` 중 하나다. 각 결과는 다음을 가진다.
+`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd`, `custom` 중 하나다. `custom`은 직접 입력 충격과 현금흐름의 별도 평가 충격에 사용한다. 각 결과는 다음을 가진다.
 
 - 가정: `label`, 원화 기준 `assumed_return_rate`, `price_change_rate`, `exchange_rate_change_rate`
 - 자산·손익: `projected_investment_value_krw`, `investment_pnl_krw`, `investment_loss_krw`
@@ -109,3 +109,5 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 ## 6. MVP 이후 모델
 
 3·6·12개월 현금흐름·누적 이자·상환 방식은 현재 비영속 모델로 구현했다. 계정과 저장 이력은 추가하지 않는다.
+
+2026-11-02 운영 배포는 모델을 추가 변경하지 않았다. 같은 현금흐름·문제 DTO를 HTTPS에서 제공하며 시세 관련 DTO의 공개 제공은 차단한다. Google Drive에는 서명 파일의 암호화 백업만 보관하고 사용자 재무정보·시세·풀이 기록의 저장 모델을 만들지 않는다.
