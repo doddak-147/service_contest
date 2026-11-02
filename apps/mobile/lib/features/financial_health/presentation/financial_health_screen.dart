@@ -8,6 +8,7 @@ import '../../../shared/widgets/investment_total_summary.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../stress_test/models/stress_test_models.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
+import '../../stress_test/presentation/cash_flow_screen.dart';
 import '../data/financial_health_api.dart';
 import '../models/financial_health_models.dart';
 import 'widgets/financial_health_result_card.dart';
@@ -415,6 +416,20 @@ class _FinancialHealthScreenState extends State<FinancialHealthScreen> {
               const SizedBox(height: 16),
               FinancialHealthResultCard(result: _result!),
               if (_analyzedProfile != null) ...[
+                const SizedBox(height: 16),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: const Text('이 정보로 월별 생활 충격 보기'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => CashFlowScreen(
+                        apiClient: widget.apiClient,
+                        initialProfile: _analyzedProfile,
+                        isExampleProfile: _usingExampleValues,
+                      ),
+                    ),
+                  ),
+                ),
                 const SizedBox(height: 16),
                 OutlinedButton.icon(
                   onPressed: () {

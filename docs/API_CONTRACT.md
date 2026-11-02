@@ -374,3 +374,65 @@ LLM에 전달 가능한 최소 결과만 받는다.
 ```
 
 오류 코드는 `VALIDATION_ERROR`, `INSTRUMENT_NOT_FOUND`, `INSUFFICIENT_PRICE_DATA`, `MARKET_DATA_UNAVAILABLE`, `EXPLANATION_UNAVAILABLE`, `INTERNAL_ERROR` 중 하나다. 내부 예외, 외부 API 본문, secret은 응답에 포함하지 않는다.
+
+## 5. 현금흐름·생활 충격 확장 (2026-11-02)
+
+영향 범위: financial-health의 기존 입력을 재사용하고 stress-test가 계산·화면을 소유한다. market-risk의 평가손익과 현금을 분리하며 combined-report·LLM의 기존 요청·응답은 변경하지 않는다. 이 확장은 새 엔드포인트이며 기존 서버에는 배포 전까지 존재하지 않는다.
+
+### `POST /api/v1/stress-tests/cash-flow`
+
+```text
+CashFlowRequest {
+  financial_profile: FinancialProfileInput
+  months?: integer = 6                  // 3 | 6 | 12
+  loan_term_months?: integer = 36        // 1..360
+  repayment_method?: "interest_only" | "equal_principal" = "interest_only"
+  income_change_rate?: number = 0       // -1..0
+  expense_change_rate?: number = 0      // 0..1
+  loan_rate_change?: number = 0         // 0..(1 - annual_loan_rate), +2%p = 0.02
+  price_change_rate?: number = 0        // -1..1
+  exchange_rate_change_rate?: number = 0 // -0.5..0.5; KRW는 0
+  investment_currency?: "KRW" | "USD" = "KRW"
+}
+MonthlyCashFlowResult {
+  month: integer
+  income_krw: integer
+  fixed_expenses_krw: integer
+  existing_debt_payment_krw: integer
+  investment_interest_krw: integer
+  investment_principal_payment_krw: integer
+  monthly_net_cash_krw: integer
+  cash_balance_krw: integer
+  cash_shortfall_krw: integer
+  investment_loan_balance_krw: integer
+  cumulative_interest_krw: integer
+}
+CashFlowPathResult {
+  monthly_points: MonthlyCashFlowResult[]
+  total_interest_krw: integer
+  total_principal_paid_krw: integer
+  ending_cash_balance_krw: integer
+  ending_loan_balance_krw: integer
+  first_shortfall_month: integer | null
+}
+CashFlowResult {
+  calculation_version: string
+  months: integer
+  initial_cash_krw: integer
+  baseline: CashFlowPathResult
+  shocked: CashFlowPathResult
+  investment_effect: ScenarioResult
+  assumptions: string[]
+}
+```
+
+`baseline`은 같은 차입·기간·상환 방식에서 충격을 모두 0으로 둔 결과다. `shocked`는 소득·고정지출·투자용 금리 변화만 적용한 결과다. 모든 금액 입력은 이 엔드포인트에서 최대 `10^15`원으로 제한한다.
+
+- 시작 현금은 투자자금과 별도로 남겨 둔 `emergency_fund_krw`다. 자기자본을 다시 차감하지 않는다.
+- 월 현금수지 = 변경된 소득 − 변경된 고정지출 − 기존 월 대출 상환액 − 투자용 월 이자 − 투자용 월 원금상환액.
+- 매월 이자는 해당 월 시작 투자용 대출잔액 × 적용 연이율 / 12다. 이자·원금 지출을 원 단위 `ROUND_HALF_UP`으로 확정한 후 누적해 월별 표와 합계가 일치한다.
+- `interest_only`도 만기 월에는 남은 투자용 원금을 전액 상환한다. `equal_principal`은 최초 원금/만기 개월을 매월 상환하고 마지막 월에 원 단위 잔액을 정산한다. 상환 후 이자를 부과하지 않는다.
+- 기존 대출은 금리·상환 방식 정보가 없으므로 월 상환액을 고정한다. `investment_loan_balance_krw`는 투자용 대출만 의미한다.
+- `cash_balance_krw`는 가정된 누적 현금여력이며 음수는 자금 부족분이다. 자동 추가차입·연체이자를 계산하지 않는다. `cash_shortfall_krw = max(-cash_balance_krw, 0)`이다. 첫 음수 월만 `first_shortfall_month`에 표시한다.
+- `investment_effect`는 기간 시작의 주가·환율 충격을 기존 `custom` 계산으로 표시한다. 이후 가격 변화·배당·매도 현금 유입은 가정하지 않으며, 평가손익을 월 현금 잔액에서 더하거나 빼지 않는다. 과거 MDD나 미래 예측값을 입력하는 계약이 아니다.
+- 재무 원본이나 월별 결과를 LLM·로그·서버 저장소에 전달하지 않는다. 결과는 사용자가 지정한 가정의 산술 계산이며 실제 상품 상환표나 투자 가능 여부 판정이 아니다.

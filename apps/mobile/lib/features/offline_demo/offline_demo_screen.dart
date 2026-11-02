@@ -5,6 +5,7 @@ import '../combined_report/presentation/widgets/combined_report_view.dart';
 import '../financial_health/presentation/widgets/financial_health_result_card.dart';
 import '../market_risk/presentation/widgets/market_risk_card.dart';
 import 'offline_demo_data.dart';
+import '../stress_test/presentation/cash_flow_screen.dart';
 
 /// A fixed, fictional walkthrough. It has no API client and makes no requests.
 class OfflineDemoScreen extends StatefulWidget {
@@ -44,6 +45,17 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                     const Text('예시 인물의 재무 상태를 살펴봅니다. 입력이나 서버 계산은 하지 않습니다.'),
                     const SizedBox(height: 14),
                     const _ExampleProfileCard(),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.account_balance_wallet_outlined),
+                      label: const Text('가상 현금흐름·생활 충격 체험'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) =>
+                              const CashFlowScreen(isOfflineDemo: true),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 14),
                     const FinancialHealthResultCard(
                       result: OfflineDemoData.financialHealth,

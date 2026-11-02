@@ -11,6 +11,7 @@ import 'widgets/stress_test_comparison_card.dart';
 import 'widgets/leverage_comparison_card.dart';
 import 'widgets/scenario_comparison_chart.dart';
 import 'widgets/stress_test_result_card.dart';
+import 'cash_flow_screen.dart';
 
 class StressTestScreen extends StatefulWidget {
   const StressTestScreen({
@@ -595,6 +596,23 @@ class _StressTestScreenState extends State<StressTestScreen> {
               ),
               const SizedBox(height: 16),
               StressTestResultCard(result: selectedResult),
+              if (_analyzedProfile != null) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.account_balance_wallet_outlined),
+                  label: const Text('같은 재무정보로 월별 생활 충격 보기'),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) => CashFlowScreen(
+                        apiClient: widget.apiClient,
+                        initialProfile: _analyzedProfile,
+                        initialCurrency: widget.instrumentCurrency ?? 'KRW',
+                        isExampleProfile: widget.isExampleProfile,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
               const SizedBox(height: 28),
               const _SectionHeading(
                 number: '4',

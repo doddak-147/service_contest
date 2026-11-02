@@ -6,6 +6,7 @@ import '../../financial_health/presentation/financial_health_screen.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../offline_demo/offline_demo_screen.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
+import '../../stress_test/presentation/cash_flow_screen.dart';
 import 'about_screen.dart';
 import 'widgets/risk_lens_illustration.dart';
 import 'widgets/server_status_card.dart';
@@ -47,6 +48,20 @@ class HomeScreen extends StatelessWidget {
                   ),
                 );
               },
+            ),
+            const SizedBox(height: 12),
+            _FeatureActionCard(
+              eyebrow: '3 · 6 · 12개월 · 생활 충격',
+              title: '월별 현금흐름과 생활 충격 살펴보기',
+              description: '소득·생활비·이자·원금 상환을 바꿔 현금 여력의 변화를 비교합니다.',
+              icon: Icons.account_balance_wallet_outlined,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CashFlowScreen(apiClient: apiClient),
+                ),
+              ),
             ),
             const SizedBox(height: 12),
             _FeatureActionCard(
