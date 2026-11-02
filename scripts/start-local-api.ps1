@@ -1,5 +1,33 @@
+param([switch]$PasteKeys)
+
 # Run from the repository root. Keys are not written to files or command history.
 $ErrorActionPreference = 'Stop'
+
+function Read-RiskLensApiKey {
+    param([string]$Provider)
+    if ($PasteKeys) {
+        $secureKey = Read-Host "Paste ONLY the $Provider key, then press Enter" -AsSecureString
+        try {
+            return [System.Net.NetworkCredential]::new('', $secureKey).Password.Trim()
+        } finally {
+            $secureKey.Dispose()
+            try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
+        }
+    }
+    $null = Read-Host "Copy ONLY the $Provider key to the clipboard now; press Enter WITHOUT pasting" -AsSecureString
+    for ($attempt = 0; $attempt -lt 10; $attempt++) {
+        try {
+            $value = ([string](Get-Clipboard -Raw -ErrorAction Stop)).Trim()
+            try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
+            return $value
+        } catch {
+            if ($attempt -eq 9) {
+                throw 'The clipboard is busy. Run .\scripts\start-local-api.ps1 -PasteKeys and paste each key at its hidden prompt.'
+            }
+            Start-Sleep -Milliseconds 200
+        }
+    }
+}
 
 if (-not (Test-Path -LiteralPath '.\.venv\Scripts\python.exe')) {
     throw 'Run this script from the repository root. Python venv was not found.'
@@ -11,16 +39,12 @@ if ($listener) {
 }
 
 try {
-    $null = Read-Host 'Copy ONLY the Twelve Data key to the clipboard now; press Enter WITHOUT pasting' -AsSecureString
-    $env:TWELVE_DATA_API_KEY = ([string](Get-Clipboard -Raw)).Trim()
-    try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
+    $env:TWELVE_DATA_API_KEY = Read-RiskLensApiKey 'Twelve Data'
     if ($env:TWELVE_DATA_API_KEY -notmatch '^[A-Za-z0-9]{24,64}$') {
         throw 'Twelve Data key format is invalid. Copy only the key, not a command or URL.'
     }
 
-    $null = Read-Host 'Copy ONLY the OpenAI key to the clipboard now; press Enter WITHOUT pasting' -AsSecureString
-    $env:LLM_API_KEY = ([string](Get-Clipboard -Raw)).Trim()
-    try { Set-Clipboard -Value '' -ErrorAction Stop } catch { }
+    $env:LLM_API_KEY = Read-RiskLensApiKey 'OpenAI'
     if ($env:LLM_API_KEY -notmatch '^sk-[A-Za-z0-9_-]{16,}$') {
         throw 'OpenAI key format is invalid. Copy only the key, not a command or URL.'
     }
