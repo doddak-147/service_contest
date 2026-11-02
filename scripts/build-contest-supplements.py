@@ -521,10 +521,10 @@ def public_pdf():
     d.text(
         54,
         137,
-        "AI 연결 시에는 주제 선택과 짧은 안내 문구를 보"
-        "조합니다. 숫자·선택지·정답은"
-        " 서버 코드가 결정하며, 공개 오프라인 체험에서는 "
-        "AI를 호출하지 않습니다.",
+        "인터넷 없이도 준비된 가상 문제로 체험할 수 있습니다. "
+        "서버에 연결하면 AI를 활용해 새로운 5문제 묶음을 "
+        "구성할 수 있습니다. AI는 주제 선택과 안내 문구를 돕고, "
+        "숫자·선택지·정답은 서버 코드가 결정합니다.",
         487,
         10.4,
         color=MUTED,
@@ -1162,7 +1162,7 @@ def guide_pdf():
     d.save()
 
 
-def main():
+def main(*, public_only: bool = False):
     OUT.mkdir(parents=True, exist_ok=True)
     pdfmetrics.registerFont(TTFont("KR", "C:/Windows/Fonts/malgun.ttf"))
     pdfmetrics.registerFont(TTFont("KRB", "C:/Windows/Fonts/malgunbd.ttf"))
@@ -1170,12 +1170,15 @@ def main():
         "KR", normal="KR", bold="KRB", italic="KR", boldItalic="KRB"
     )
     public_pdf()
-    private_pdf()
-    guide_pdf()
+    if not public_only:
+        private_pdf()
+        guide_pdf()
     for filename, kind in [
         ("리스크렌즈_공개용.pdf", "public"),
         ("리스크렌즈_심사용_외부공개제외.pdf", "private"),
     ]:
+        if public_only and kind != "public":
+            continue
         import io
 
         target = OUT / filename
@@ -1204,4 +1207,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(public_only="--public-only" in sys.argv[1:])
