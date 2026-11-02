@@ -23,6 +23,8 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 
 Twelve Data 안내가 나온 다음 키 문자열만 메모장에서 Ctrl+C로 복사하고, 터미널로 돌아와 붙여넣지 않은 채 Enter를 누른다. OpenAI 안내에서도 해당 키를 같은 순서로 복사한다. 스크립트가 클립보드를 읽은 뒤 비운다. `Application startup complete`가 나오면 서버가 요청을 기다리는 정상 상태이며 이 터미널은 계속 열어 둔다.
 
+Windows 클립보드 읽기가 실패하면 `.\scripts\start-local-api.ps1 -PasteKeys`로 실행한다. 이 방식에서는 각 숨김 입력창에 해당 키 문자열을 직접 붙여넣고 Enter를 누른다. OpenAI는 쉬운 설명에 사용한 기존 키를 그대로 사용한다. 키를 새로 발급할 필요는 없으며 채팅·소스코드·명령 문자열에 넣지 않는다.
+
 두 번째 터미널:
 
 ```powershell
@@ -35,6 +37,8 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 앱에서 서버 연결 → 가상 재무 예시 → 미국 주식·ETF 조회 → 과거 위험·원화 기준일 → Stress Test → 결합 결과·쉬운 설명 순서로 확인한다. 실제 개인정보를 시연에 입력할 필요는 없다. API 한도·AI 장애가 생기면 오류·기본 설명 사유를 확인하고 완전 가상 체험으로 진행할 수 있다.
 
 추가 기능은 홈의 월별 현금흐름에서 3·6·12개월과 생활 충격을 고르고 계산한다. 결과를 A에 보관하고 조건을 바꿔 재계산한 결과를 B에 보관하면 입력 차이와 현금·이자 차이를 확인할 수 있다. 가격 그래프는 과거 위험 결과에서 별도로 요청한다. 위험 이해 체험은 서버 없이 가능하다. 공개 자료에는 `오프라인 체험 · 완전 가상`에서 진입한 가상 현금흐름·가격 그래프·이해 사례를 사용한다.
+
+위험 이해 체험은 8개 주제에서 한 번에 5문제를 제공한다. 홈에서 진입한 뒤 `AI로 새 5문제 만들기`를 누르면 같은 로컬 OpenAI 설정을 사용한다. AI는 제목·도입을 구성하고 서버가 가상 수치와 정답을 계산한다. AI·연결 실패 시 자체 문제와 사유를 확인한다. 오프라인 체험의 문제는 서버·AI를 호출하지 않는다. 정답 확인 후 선택을 바꿀 수 없으며 다섯 문제 뒤 새 묶음을 시작한다.
 
 두 번째 터미널에서 앱 실행을 종료하면 USB 포트 전달을 제거한다. 첫 번째 터미널은 Ctrl+C로 종료하며 프로세스의 API 키 환경변수를 제거한다. USB를 분리하면 로컬 API 시연 연결도 종료된다.
 
@@ -52,4 +56,4 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 .\scripts\build-release-apk.ps1
 ```
 
-현재 출력은 `output/apk/RiskLens-Android-1.1.0.apk`다. 운영 주소에는 공개 종목 데이터 차단이 적용되어 있고 새 현금흐름 API는 아직 배포되지 않았다. 이 설치본에서는 새 기능의 완전 가상 사례를 사용할 수 있다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
+현재 출력은 `output/apk/RiskLens-Android-1.2.0.apk`다. 운영 주소에는 공개 종목 데이터 차단이 적용되어 있고 새 현금흐름 API는 아직 배포되지 않았다. 이 설치본에서는 새 기능의 완전 가상 사례를 사용할 수 있다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
