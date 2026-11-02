@@ -275,6 +275,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
             ExpansionTile(
               title: const Text('재무 조건 입력'),
               initiallyExpanded: widget.initialProfile == null,
+              childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
               children: [
                 const Text(
                   '생활비·고정지출에는 아래 기존 대출 월상환액을 중복해 넣지 마세요. 비상자금은 투자 후 별도로 남겨 둔 현금입니다.',
@@ -335,14 +336,20 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
             ExpansionTile(
               title: const Text('투자용 대출 상환 가정'),
               initiallyExpanded: false,
+              childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
               children: [
+                const Align(
+                  alignment: Alignment.centerLeft,
+                  child: Text('상환 방식'),
+                ),
+                const SizedBox(height: 8),
                 DropdownButtonFormField<String>(
                   key: ValueKey(_repayment),
                   initialValue: _repayment,
                   isExpanded: true,
                   isDense: false,
                   itemHeight: null,
-                  decoration: const InputDecoration(labelText: '상환 방식'),
+                  decoration: const InputDecoration(),
                   items: const [
                     DropdownMenuItem(
                       value: 'interest_only',
@@ -369,6 +376,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               title: const Text('생활 충격 설정'),
               subtitle: const Text('소득 감소 · 생활비 증가 · 금리 상승'),
               initiallyExpanded: true,
+              childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
               children: [
                 _input(_incomeDrop, '소득 감소율', suffix: '% 감소', decimal: true),
                 _input(
@@ -395,6 +403,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
             ExpansionTile(
               title: const Text('주가·환율 평가 충격'),
               subtitle: const Text('현금 흐름과 별도로 표시'),
+              childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
               children: [
                 Wrap(
                   spacing: 8,
