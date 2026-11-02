@@ -25,6 +25,20 @@ adb install .\output\apk\RiskLens-Android-1.2.0.apk
 
 ## 서명 파일 백업
 
+Google Drive에는 파일 목록도 암호화한 7-Zip 아카이브만 올린다. 저장소 루트의 PC PowerShell에서 다음을 실행한다. 비밀번호는 7-Zip이 요청하는 터미널에 직접 입력하며 채팅·스크립트 인수에 넣지 않는다. 선택한 암호는 별도의 비밀번호 관리 도구에 보관한다.
+
+```powershell
+.\scripts\backup-signing-encrypted.ps1
+```
+
+두 파일을 직접 읽어 암호화하며 평문 복사본을 별도 백업으로 만들지 않는다. 잘못된 암호로는 파일명도 읽을 수 없는지 확인하고, 사용자 전용 임시 폴더에 실제로 복원한 뒤 원본과 SHA-256을 대조한다. 정상 검증 후 임시 평문 두 파일을 지운다. 결과는 `Documents/RiskLensBackups`의 `.7z`와 해시 파일이며 Git 밖에 둔다. 이 도구는 가상 서명 파일로 암호화·실제 복원·일치·임시 파일 정리를 확인했다. 실제 서명 파일의 백업은 아직 실행하지 않았다.
+
+암호화 파일을 비공개 Google Drive에 올린 뒤 다시 다운로드해 아래와 같이 검증한다. 경로와 해시는 실제 파일과 최초 출력값으로 바꾼다. 업로드·다운로드·동일 해시·복원 일치까지 확인해야 외부 백업 완료로 기록한다.
+
+```powershell
+.\scripts\backup-signing-encrypted.ps1 -VerifyOnly -Archive 'C:\Users\Administrator\Downloads\RiskLens-signing-example.7z' -ExpectedSha256 '<최초 출력 SHA256>'
+```
+
 2026-11-01 개인 서명 파일 두 개의 존재를 확인했다. 사용자는 이후 Google Drive 백업을 선택했으나 기능 확장을 먼저 진행하기로 해 외부 백업은 아직 수행하지 않았다. 암호화와 업로드·복원 확인 전에는 완료로 표시하지 않는다. 외장 USB나 암호화된 직접 경로를 사용할 경우 저장소 루트에서 다음을 실행한다. `E:\RiskLensBackup`은 준비한 실제 저장 위치로 바꾼다.
 
 ```powershell
