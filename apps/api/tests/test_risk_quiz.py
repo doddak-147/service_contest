@@ -24,8 +24,8 @@ def wordings() -> dict:
         "items": [
             {
                 "topic": topic,
-                "title": "가상 사례를 살펴볼까요?",
-                "intro": "가상 인물의 메모를 읽고 주어진 조건을 확인해 봅니다.",
+                "title": f"{TOPICS[topic]}을 살펴볼까요?",
+                "intro": f"연습 노트에서 {TOPICS[topic]} 주제를 확인해 봅니다.",
             }
             for topic in TOPICS
         ]
