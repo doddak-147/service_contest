@@ -47,6 +47,12 @@ FUTURE = (
     "이러한 확장 가능성을 향후 서비스 운영 계획에 반영"
     "하고자 합니다."
 )
+OPERATING_NOTE = (
+    "사업자 플랜 전환 시에도 거래소 조건·지역별 승인·"
+    "외부 표시 권한을 확인합니다. "
+    "데이터 재배포는 별도 계약 대상일 수 있습니다. "
+    "가상 체험은 이후에도 교육과 오프라인 설명에 활용할 수 있습니다."
+)
 NOTICE = (
     "본 자료와 동봉된 비공개 시연 영상은 공모전 내부 "
     "심사 목적으로 제출합니다. "
@@ -578,11 +584,7 @@ def public_pdf():
     d.text(
         42,
         end - 11,
-        "사업자 플랜 전환 시에도 거래소 조건·지역별 승인·"
-        "외부 표시 권한을 확인합니다."
-        " 데이터 재배포는 별도 계약 대상일 수 있습니다. "
-        "가상 체험은 이후에도 교육과 "
-        "오프라인 설명에 활용할 수 있습니다.",
+        OPERATING_NOTE,
         511,
         9.3,
         color=MUTED,
@@ -840,13 +842,9 @@ def private_pdf():
     d.text(
         42,
         end - 12,
-        "개인용 Pro로 변경하는 것만으로 외부 표시가 자동"
-        " 허용되는 것은 아닙니다. 사"
-        "업자 플랜에서도 제공 데이터·거래소 조건·추가 승인"
-        "·재배포 계약의 범위를 확인한"
-        " 뒤 확장합니다.",
+        OPERATING_NOTE,
         511,
-        10,
+        9.3,
         color=MUTED,
     )
     video_page(d, "private")
@@ -1162,22 +1160,24 @@ def guide_pdf():
     d.save()
 
 
-def main(*, public_only: bool = False):
+def main(*, only: str | None = None):
     OUT.mkdir(parents=True, exist_ok=True)
     pdfmetrics.registerFont(TTFont("KR", "C:/Windows/Fonts/malgun.ttf"))
     pdfmetrics.registerFont(TTFont("KRB", "C:/Windows/Fonts/malgunbd.ttf"))
     pdfmetrics.registerFontFamily(
         "KR", normal="KR", bold="KRB", italic="KR", boldItalic="KRB"
     )
-    public_pdf()
-    if not public_only:
+    if only in (None, "public"):
+        public_pdf()
+    if only in (None, "private"):
         private_pdf()
+    if only is None:
         guide_pdf()
     for filename, kind in [
         ("리스크렌즈_공개용.pdf", "public"),
         ("리스크렌즈_심사용_외부공개제외.pdf", "private"),
     ]:
-        if public_only and kind != "public":
+        if only is not None and kind != only:
             continue
         import io
 
@@ -1207,4 +1207,11 @@ def main(*, public_only: bool = False):
 
 
 if __name__ == "__main__":
-    main(public_only="--public-only" in sys.argv[1:])
+    selected = (
+        "public"
+        if "--public-only" in sys.argv[1:]
+        else "private"
+        if "--private-only" in sys.argv[1:]
+        else None
+    )
+    main(only=selected)
