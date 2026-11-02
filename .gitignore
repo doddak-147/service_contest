@@ -41,3 +41,7 @@ output/submission/
 output/pdf/리스크렌즈_심사용_외부공개제외.pdf
 output/pdf/리스크렌즈_자료안내_심사내부용.pdf
 output/video/리스크렌즈_심사용_외부공개제외.mp4
+
+# Temporary Word owner and recovery files.
+~$*
+~WRL*.tmp
