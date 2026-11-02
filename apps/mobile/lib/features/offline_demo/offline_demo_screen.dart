@@ -6,6 +6,7 @@ import '../financial_health/presentation/widgets/financial_health_result_card.da
 import '../market_risk/presentation/widgets/market_risk_card.dart';
 import 'offline_demo_data.dart';
 import '../stress_test/presentation/cash_flow_screen.dart';
+import '../market_risk/presentation/widgets/market_history_view.dart';
 
 /// A fixed, fictional walkthrough. It has no API client and makes no requests.
 class OfflineDemoScreen extends StatefulWidget {
@@ -67,6 +68,10 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                     ),
                     const SizedBox(height: 14),
                     const MarketRiskCard(result: OfflineDemoData.marketRisk),
+                    const SizedBox(height: 12),
+                    const MarketHistoryView(
+                      result: OfflineDemoData.priceHistory,
+                    ),
                   ] else
                     const CombinedReportView(
                       result: OfflineDemoData.report,

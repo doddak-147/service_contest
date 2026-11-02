@@ -3,8 +3,14 @@ import '../combined_report/models/combined_report_models.dart';
 import '../financial_health/models/financial_health_models.dart';
 import '../market_risk/models/market_risk_models.dart';
 import '../stress_test/models/stress_test_models.dart';
+import '../market_risk/models/market_history_models.dart';
+import 'fictional_price_points.dart';
 
 abstract final class OfflineDemoData {
+  static const priceHistory = MarketPriceHistoryResult(
+    market_risk: marketRisk,
+    points: fictionalPricePoints,
+  );
   static const profile = FinancialProfileInput(
     monthly_income_krw: 3000000,
     monthly_fixed_expenses_krw: 1500000,
@@ -31,15 +37,16 @@ abstract final class OfflineDemoData {
       symbol: 'DEMO-A',
       market: '가상 시장',
       name: '가상기업 A',
-      currency: 'KRW',
+      currency: 'USD',
     ),
     period_start: '2026-07-01',
     period_end: '2026-09-29',
     data_as_of: '2026-09-29',
+    fx_rate_as_of: '2026-09-29',
     data_source: 'fictional_demo',
     observation_count: 63,
     period_return_rate: -0.05,
-    annualized_volatility: 0.24,
+    annualized_volatility: 0.239756,
     max_drawdown_rate: -0.30,
     peak_date: '2026-07-15',
     trough_date: '2026-08-21',

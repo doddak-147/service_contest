@@ -436,3 +436,30 @@ CashFlowResult {
 - `cash_balance_krw`는 가정된 누적 현금여력이며 음수는 자금 부족분이다. 자동 추가차입·연체이자를 계산하지 않는다. `cash_shortfall_krw = max(-cash_balance_krw, 0)`이다. 첫 음수 월만 `first_shortfall_month`에 표시한다.
 - `investment_effect`는 기간 시작의 주가·환율 충격을 기존 `custom` 계산으로 표시한다. 이후 가격 변화·배당·매도 현금 유입은 가정하지 않으며, 평가손익을 월 현금 잔액에서 더하거나 빼지 않는다. 과거 MDD나 미래 예측값을 입력하는 계약이 아니다.
 - 재무 원본이나 월별 결과를 LLM·로그·서버 저장소에 전달하지 않는다. 결과는 사용자가 지정한 가정의 산술 계산이며 실제 상품 상환표나 투자 가능 여부 판정이 아니다.
+
+## 6. 과거 가격 그래프 확장 (2026-11-02)
+
+### `GET /api/v1/market-risk/{market}/{symbol}/history?start_date={date}&end_date={date}`
+
+```text
+MarketPricePoint {
+  date: date
+  krw_price_index: number
+  usd_price_index: number | null
+  fx_rate_as_of: date | null
+}
+MarketPriceHistoryResult {
+  market_risk: MarketRiskResult
+  points: MarketPricePoint[]
+}
+```
+
+기존 `MarketRiskResult` 계약은 유지한다. 이 새 엔드포인트는 같은 시계열의 요약과 날짜별 그래프를 함께 반환한다. 모바일은 사용자가 그래프 보기를 선택할 때만 조회하며 요약 조회 때의 원래 시작·종료일을 재사용해 제공자 캐시를 활용한다. 요약과 그래프의 종목·기준일·MDD·관측치·고점/저점/회복일이 달라지면 모바일은 그래프 표시를 거절하고 재조회를 안내한다. 그래프 실패는 기존 요약을 지우지 않는다.
+
+- 지수는 첫 관측 가격을 100으로 맞춘 `가격 / 첫 가격 × 100`이다. 110은 첫날 대비 +10%이며 명목 주가가 아니다. 표시는 소수점 6자리로 반올림한다.
+- 원화 지수는 MDD 계산에 사용한 날짜별 원화 가격, 달러 지수는 같은 관측일의 분할 조정 USD 종가를 사용한다. 환율·조정 기준과 Basic 비공개 시연 범위는 기존과 같다.
+- 달러 원자료가 없으면 값을 역산하거나 추정하지 않는다. 해당 관측의 `usd_price_index`는 `null`이고 `USD_PRICE_UNAVAILABLE` 경고를 추가한다. 첫 달러 가격이 없으면 달러 곡선 전체를 생략한다.
+- 관측이 2개 미만이거나 첫 원화 가격이 0이면 `points=[]`로 반환한다. 중복 날짜·비정상 가격은 제공자 오류로 처리한다. 휴장일 행을 만들거나 다운샘플링하지 않는다.
+- MDD 표식과 음영은 원화 요약의 고점·저점·회복일을 그대로 사용한다. 가로축은 관측 순서로 표시한다.
+- `PricePoint.usd_adjusted_close`는 어댑터 내부에만 추가하는 선택 속성이며 기존 financial-health·stress-test·combined-report 및 LLM JSON은 변경하지 않는다.
+- 공개 운영 Nginx의 `/market-risk/` 차단은 이 하위 경로에도 적용한다. 공개 오프라인 그래프는 독립적으로 만든 가상 곡선과 계산한 가상 지표만 사용한다.

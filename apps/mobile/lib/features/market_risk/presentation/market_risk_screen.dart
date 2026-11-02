@@ -8,6 +8,7 @@ import '../../stress_test/presentation/stress_test_screen.dart';
 import '../data/market_risk_repository.dart';
 import '../models/market_risk_models.dart';
 import 'widgets/market_risk_card.dart';
+import 'widgets/market_history_view.dart';
 
 enum PeriodPreset {
   threeMonths(label: '최근 3개월', days: 90),
@@ -91,6 +92,7 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
   bool _isLoadingRisk = false;
   String? _errorMessage;
   MarketRiskResult? _riskResult;
+  DateTime? _analysisRequestedStart, _analysisRequestedEnd;
   bool _showRiskRetry = false;
   int _searchRequestId = 0;
   int _riskRequestId = 0;
@@ -182,7 +184,11 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
         endDate: now,
       );
       if (!mounted || requestId != _riskRequestId) return;
-      setState(() => _riskResult = result);
+      setState(() {
+        _riskResult = result;
+        _analysisRequestedStart = startDate;
+        _analysisRequestedEnd = now;
+      });
     } on ApiException catch (e) {
       if (!mounted || requestId != _riskRequestId) return;
       setState(() {
@@ -516,6 +522,16 @@ class _MarketRiskScreenState extends State<MarketRiskScreen> {
             // Result Card
             if (!_isLoadingRisk && _riskResult != null) ...[
               MarketRiskCard(result: _riskResult!),
+              const SizedBox(height: 12),
+              if (_analysisRequestedStart != null &&
+                  _analysisRequestedEnd != null)
+                MarketHistoryPanel(
+                  key: ValueKey(_riskResult),
+                  client: widget.apiClient,
+                  summary: _riskResult!,
+                  requestedStart: _analysisRequestedStart!,
+                  requestedEnd: _analysisRequestedEnd!,
+                ),
               if (widget.financialProfile != null) ...[
                 const SizedBox(height: 16),
                 FilledButton.icon(

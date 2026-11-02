@@ -84,3 +84,15 @@ class MarketRiskResult(ContractModel):
             recovery_date=calc.recovery_date,
             warnings=list(calc.warnings),
         )
+
+
+class MarketPricePoint(ContractModel):
+    date: date
+    krw_price_index: float
+    usd_price_index: float | None
+    fx_rate_as_of: date | None
+
+
+class MarketPriceHistoryResult(ContractModel):
+    market_risk: MarketRiskResult
+    points: list[MarketPricePoint]

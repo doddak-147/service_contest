@@ -17,12 +17,17 @@ class ComparisonLineChart extends StatefulWidget {
     required this.series,
     required this.unit,
     this.markers = const {},
+    this.includeZero = true,
+    this.highlightStart,
+    this.highlightEnd,
     super.key,
   });
   final String title, unit;
   final List<String> labels;
   final List<LineSeries> series;
   final Map<int, String> markers;
+  final bool includeZero;
+  final int? highlightStart, highlightEnd;
   @override
   State<ComparisonLineChart> createState() => _ComparisonLineChartState();
 }
@@ -43,7 +48,9 @@ class _ComparisonLineChartState extends State<ComparisonLineChart> {
       0,
       widget.labels.length - 1,
     );
-    var low = math.min(0.0, values.reduce(math.min));
+    var low = widget.includeZero
+        ? math.min(0.0, values.reduce(math.min))
+        : values.reduce(math.min);
     var high = values.reduce(math.max);
     if (high <= low) high = low + 1;
     final pad = (high - low) * .08;
@@ -121,6 +128,8 @@ class _ComparisonLineChartState extends State<ComparisonLineChart> {
                           high,
                           index,
                           widget.markers,
+                          widget.highlightStart,
+                          widget.highlightEnd,
                         ),
                       ),
                     ),
@@ -180,11 +189,14 @@ class _Lines extends CustomPainter {
     this.high,
     this.selected,
     this.markers,
+    this.highlightStart,
+    this.highlightEnd,
   );
   final List<LineSeries> series;
   final int count, selected;
   final double low, high;
   final Map<int, String> markers;
+  final int? highlightStart, highlightEnd;
   @override
   void paint(Canvas canvas, Size size) {
     double x(int index) =>
@@ -193,6 +205,16 @@ class _Lines extends CustomPainter {
     final grid = Paint()
       ..color = AppColors.border
       ..strokeWidth = 1;
+    if (highlightStart != null &&
+        highlightEnd != null &&
+        highlightStart! >= 0 &&
+        highlightEnd! >= highlightStart! &&
+        highlightEnd! < count) {
+      canvas.drawRect(
+        Rect.fromLTRB(x(highlightStart!), 0, x(highlightEnd!), size.height),
+        Paint()..color = AppColors.danger.withValues(alpha: .10),
+      );
+    }
     for (var i = 0; i < 5; i++) {
       final height = size.height * i / 4;
       canvas.drawLine(Offset(0, height), Offset(size.width, height), grid);
@@ -209,6 +231,22 @@ class _Lines extends CustomPainter {
         Offset(x(marker), 0),
         Offset(x(marker), size.height),
         grid,
+      );
+      final label = TextPainter(
+        text: TextSpan(
+          text: markers[marker],
+          style: const TextStyle(color: AppColors.textMuted, fontSize: 10),
+        ),
+        textDirection: TextDirection.ltr,
+      )..layout(maxWidth: math.min(80, size.width));
+      label.paint(
+        canvas,
+        Offset(
+          (x(marker) - label.width / 2)
+              .clamp(0, math.max(0, size.width - label.width))
+              .toDouble(),
+          3,
+        ),
       );
     }
     for (final s in series) {
