@@ -28,6 +28,8 @@
 
 1.2.0(`versionCode=4`) 서명 APK는 `output/apk/RiskLens-Android-1.2.0.apk`입니다. 입력칸 잘림과 스크롤 후 접힘을 수정하고 정답·오답 표시가 있는 5문제 체험을 반영했습니다. 비공개 시연은 [실행 절차](docs/DEMO_RUNBOOK.md), 설치본과 서명 백업은 [릴리스 안내](docs/RELEASE_APK.md), 구현·검증 이력은 [기능 확장 기록](docs/FEATURE_EXPANSION.md)을 따릅니다. 검토 브랜치는 `feature/foundation-learning-quiz`이며 `main` 병합은 별도 리뷰 대상입니다.
 
+상세기획서는 공식 양식 항목에 맞춘 [본문 초안](docs/contest/리스크렌즈_상세기획서_초안.md)과 [검토용 7쪽 PDF](output/pdf/리스크렌즈_상세기획서_초안.pdf)를 준비했습니다. 가상 예시만 사용하며 공식 HWP 반영·제출 완료본과 구분합니다.
+
 ## 프로젝트 구조
 
 ```text
