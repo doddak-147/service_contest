@@ -138,9 +138,16 @@ class _MarketHistoryPanelState extends State<MarketHistoryPanel> {
       final risk = result.market_risk;
       final original = widget.summary;
       if (risk.instrument != original.instrument ||
+          risk.instrument.currency != original.instrument.currency ||
+          risk.instrument.instrument_type !=
+              original.instrument.instrument_type ||
           risk.period_start != original.period_start ||
           risk.period_end != original.period_end ||
           risk.data_as_of != original.data_as_of ||
+          risk.fx_rate_as_of != original.fx_rate_as_of ||
+          risk.data_source != original.data_source ||
+          risk.period_return_rate != original.period_return_rate ||
+          risk.annualized_volatility != original.annualized_volatility ||
           risk.max_drawdown_rate != original.max_drawdown_rate ||
           risk.observation_count != original.observation_count ||
           risk.peak_date != original.peak_date ||

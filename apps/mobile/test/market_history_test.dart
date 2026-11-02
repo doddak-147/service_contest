@@ -10,6 +10,68 @@ import 'package:financial_shock_preview/shared/theme/app_theme.dart';
 import 'package:financial_shock_preview/shared/widgets/comparison_line_chart.dart';
 
 void main() {
+  for (final changed in [false, true]) {
+    testWidgets('그래프의 전체 요약 기준 일치 여부: 변경=$changed', (tester) async {
+      final risk = OfflineDemoData.marketRisk;
+      final body = {
+        'market_risk': {
+          'instrument': risk.instrument.toJson(),
+          'period_start': risk.period_start,
+          'period_end': risk.period_end,
+          'data_as_of': risk.data_as_of,
+          'fx_rate_as_of': risk.fx_rate_as_of,
+          'data_source': risk.data_source,
+          'observation_count': risk.observation_count,
+          'period_return_rate': changed ? .2 : risk.period_return_rate,
+          'annualized_volatility': risk.annualized_volatility,
+          'max_drawdown_rate': risk.max_drawdown_rate,
+          'peak_date': risk.peak_date,
+          'trough_date': risk.trough_date,
+          'recovery_date': risk.recovery_date,
+          'warnings': risk.warnings,
+        },
+        'points': OfflineDemoData.priceHistory.points
+            .map(
+              (point) => {
+                'date': point.date,
+                'krw_price_index': point.krw_price_index,
+                'usd_price_index': point.usd_price_index,
+                'fx_rate_as_of': point.fx_rate_as_of,
+              },
+            )
+            .toList(),
+      };
+      final client = ApiClient(
+        client: MockClient(
+          (_) async => http.Response.bytes(utf8.encode(jsonEncode(body)), 200),
+        ),
+      );
+      addTearDown(client.close);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: MarketHistoryPanel(
+                client: client,
+                summary: risk,
+                requestedStart: DateTime(2026, 7, 1),
+                requestedEnd: DateTime(2026, 9, 29),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('과거 가격과 MDD 그래프 보기'));
+      await tester.pumpAndSettle();
+      expect(
+        find.byType(MarketHistoryView),
+        changed ? findsNothing : findsOneWidget,
+      );
+      if (changed) expect(find.text('가격 그래프 다시 요청'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   test('가상 곡선과 가상 요약의 기준점·MDD가 일치한다', () {
     final history = OfflineDemoData.priceHistory;
     expect(history.points.length, history.market_risk.observation_count);
