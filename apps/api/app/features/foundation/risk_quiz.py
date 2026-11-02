@@ -47,7 +47,11 @@ def _money(value: int | Decimal) -> str:
 
 
 def _percent(value: int | Decimal) -> str:
-    return format(Decimal(value).quantize(Decimal("0.01")), "f").rstrip("0").rstrip(".")
+    return (
+        format(Decimal(value).quantize(Decimal("0.01"), rounding=ROUND_HALF_UP), "f")
+        .rstrip("0")
+        .rstrip(".")
+    )
 
 
 def _round(value: Decimal) -> int:
@@ -83,15 +87,22 @@ def build_quiz(seed: int) -> list[QuizQuestion]:
             )
         )
 
-    drop = rng.choice([20, 25, 50, 75])
-    recovery = Decimal(drop) / (100 - drop) * 100
+    drop = rng.choice([0, 20, 25, 50, 75, 100])
+    recovery = Decimal(drop) / (100 - drop) * 100 if drop < 100 else None
     add(
         "recovery",
         f"가상 자산이 {drop}% 하락했습니다. "
-        "남은 자산에서 원래 금액으로 돌아가려면 몇 % 상승해야 할까요?",
-        f"{_percent(recovery)}% 상승",
-        [f"{drop}% 상승", f"{_percent(recovery * 2)}% 상승"],
-        f"{drop} ÷ (100 − {drop}) × 100 = {_percent(recovery)}%",
+        "남은 자산에서 원래 금액으로 돌아가려면 몇 % 상승해야 할까요? "
+        "상승률은 소수 둘째 자리까지 반올림합니다.",
+        f"{_percent(recovery)}% 상승" if recovery is not None else "유한한 회복률 없음",
+        (
+            [f"{drop}% 상승", f"{_percent(recovery * 2)}% 상승"]
+            if drop not in (0, 100)
+            else ["20% 상승", "200% 상승"]
+        ),
+        f"{drop} ÷ (100 − {drop}) × 100 = {_percent(recovery)}%"
+        if recovery is not None
+        else "남은 자산이 0이므로 유한한 상승률로 원금에 도달할 수 없습니다.",
         "하락률과 회복 상승률의 기준 금액이 다릅니다. "
         "수수료·세금은 제외했으며 실제 회복 시점을 예측하지 않습니다.",
     )

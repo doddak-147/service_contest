@@ -56,6 +56,9 @@ def test_every_generated_answer_matches_independent_arithmetic() -> None:
                 for n in re.findall(r"-?\d[\d,]*(?:\.\d+)?", q.prompt)
             ]
             answer = q.options[q.correct_index]
+            if q.topic == "recovery" and numbers[0] == 100:
+                assert answer == "유한한 회복률 없음"
+                continue
             actual = Decimal(
                 re.search(r"-?\d[\d,]*(?:\.\d+)?", answer)[0].replace(",", "")
             )
@@ -101,6 +104,8 @@ def test_every_generated_answer_matches_independent_arithmetic() -> None:
         "오백만 원",
         "매수해도 됩니다",
         "<script>실행</script>",
+        "한 달 동안 살펴봅니다",
+        "one month later",
     ],
 )
 def test_model_cannot_add_numbers_advice_or_markup(text: str) -> None:
