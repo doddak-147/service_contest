@@ -45,15 +45,18 @@ apps/
   mobile/
     lib/
       features/
+        foundation/
         financial_health/
         market_risk/
         stress_test/
         combined_report/
+        offline_demo/
       shared/
     test/
   api/
     app/
       features/
+        foundation/         # health, 가상 문제 구성과 AI 제목·도입
         financial_health/   # route, schema, calculation
         market_risk/        # route, schema, calculation
         stress_test/        # route, schema, calculation
@@ -104,6 +107,8 @@ LLM 출력은 문자열 설명이며 권위 있는 데이터 모델에 다시 �
 현재 배포는 공모전 시연용 단일 서버 구성이다. 공인 IP, 도메인과 인증서가 바뀌면 모바일 빌드의 `API_BASE_URL`과 운영 문서를 함께 갱신한다. 최신 Settings는 `APP_ENV=production`에서 Twelve Data 설정을 거부하며, 배포 실행 명령에서도 production·시세 disabled를 강제한다.
 
 2026-11-02 `api-1.2.0-ada4794dbbd6`를 `/opt/service-contest/releases/` 아래 배치했다. `service-contest-api.service`의 `90-risk-lens-release.conf`가 새 WorkingDirectory를 가리키며 기존 Python 3.12.3 가상환경을 재사용한다. `/etc/service-contest.env`는 서버에서만 읽고 기존 `/opt/service-contest/app`은 복구용으로 보존했다. Nginx의 시세 차단도 유지한다. 임시 localhost:18000과 운영 localhost:8000, 외부 HTTPS에서 가상 현금흐름 산술·기존 계산·AI 5문제를 확인했다. 공개 PDF에는 Twelve Data 실데이터 또는 파생 수치를 넣지 않는다.
+
+Android 1.2.0 서명 설치본은 운영 HTTPS에 직접 연결한다. ADB 포트 전달 없이 실기기 계산·AI 검사를 수행했으며 사용자가 USB 분리 후 3개월·6개월 현금흐름도 확인했다. 개인 서명 파일 두 개는 개발 PC에서 AES 7-Zip으로 암호화·복원 검증했고, Google Drive에는 이 암호화 파일만 백업한다. 서버 환경파일·TLS 인증서·사용자 재무정보는 이 백업 대상이 아니다.
 
 ## 7. MVP 이후 확장
 

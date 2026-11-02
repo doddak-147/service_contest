@@ -58,4 +58,6 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 
 현재 출력은 `output/apk/RiskLens-Android-1.2.0.apk`다. 2026-11-02 운영 서버에 현금흐름·AI 문제 API를 배포했고 공개 종목 데이터 차단은 유지한다. 이 설치본은 인터넷이 있으면 PC 서버·USB 없이 직접 입력 현금흐름과 AI 가상 문제를 사용할 수 있다. 인터넷이 없으면 완전 가상 체험과 자체 문제를 사용한다. 서버 연결 상태 확인과 선택한 기능의 API 호출을 구분한다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
 
+실제 확인 범위는 운영 HTTPS의 실기기 검사 4종과 릴리스 설치·홈 연결·가상 재무 예시 온라인 계산이다. 사용자는 USB 분리 후 3개월·6개월 결과가 정상임을 확인했다. 이는 인터넷을 사용한 운영 연결 검증이며 오프라인 모드를 의미하지 않는다.
+
 운영 코드를 갱신할 때는 [버전 배포 절차](../deploy/cloud/README.md)를 따른다. 실패 시 출력된 rollback 명령을 서버 SSH 터미널에서 사용한다. API 키·환경파일을 개발 PC나 Google Drive로 복사하지 않는다.
