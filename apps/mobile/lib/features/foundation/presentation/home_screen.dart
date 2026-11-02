@@ -8,6 +8,7 @@ import '../../offline_demo/offline_demo_screen.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
 import '../../stress_test/presentation/cash_flow_screen.dart';
 import 'about_screen.dart';
+import 'risk_learning_screen.dart';
 import 'widgets/risk_lens_illustration.dart';
 import 'widgets/server_status_card.dart';
 
@@ -88,6 +89,20 @@ class HomeScreen extends StatelessWidget {
               },
               icon: const Icon(Icons.info_outline_rounded, size: 19),
               label: const Text('서비스 원칙 보기'),
+            ),
+            const SizedBox(height: 8),
+            _FeatureActionCard(
+              eyebrow: '가상 사례 · 선택하고 이해하기',
+              title: '짧은 위험 이해 체험',
+              description: '회복률·환율·이자·현금의 차이를 네 가지 사례로 확인합니다.',
+              icon: Icons.lightbulb_outline,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const RiskLearningScreen(),
+                ),
+              ),
             ),
           ],
         ),

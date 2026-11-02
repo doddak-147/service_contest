@@ -7,6 +7,7 @@ import '../market_risk/presentation/widgets/market_risk_card.dart';
 import 'offline_demo_data.dart';
 import '../stress_test/presentation/cash_flow_screen.dart';
 import '../market_risk/presentation/widgets/market_history_view.dart';
+import '../foundation/presentation/risk_learning_screen.dart';
 
 /// A fixed, fictional walkthrough. It has no API client and makes no requests.
 class OfflineDemoScreen extends StatefulWidget {
@@ -46,6 +47,15 @@ class _OfflineDemoScreenState extends State<OfflineDemoScreen> {
                     const Text('예시 인물의 재무 상태를 살펴봅니다. 입력이나 서버 계산은 하지 않습니다.'),
                     const SizedBox(height: 14),
                     const _ExampleProfileCard(),
+                    TextButton.icon(
+                      icon: const Icon(Icons.lightbulb_outline),
+                      label: const Text('가상 사례로 위험 이해 체험'),
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const RiskLearningScreen(),
+                        ),
+                      ),
+                    ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
                       icon: const Icon(Icons.account_balance_wallet_outlined),
