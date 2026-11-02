@@ -9,8 +9,14 @@ class CashFlowSnapshot {
 }
 
 class CashFlowComparisonView extends StatelessWidget {
-  const CashFlowComparisonView({required this.a, required this.b, super.key});
+  const CashFlowComparisonView({
+    required this.a,
+    required this.b,
+    this.isOfflineDemo = false,
+    super.key,
+  });
   final CashFlowSnapshot a, b;
+  final bool isOfflineDemo;
   static const _labels = {
     'monthly_income_krw': '월 소득',
     'monthly_fixed_expenses_krw': '생활비·고정지출',
@@ -63,6 +69,11 @@ class CashFlowComparisonView extends StatelessWidget {
           children: [
             Text('가정 A · B 비교', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
+            if (isOfflineDemo)
+              const Text(
+                '완전 가상 사례 · 실제 시세·환율·AI 미사용',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
             const Text('현재 화면에서 보관한 계산 결과입니다. 어느 조건이 적합한지 판정하지 않습니다.'),
             if (a.request.months != b.request.months)
               const Padding(

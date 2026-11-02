@@ -215,7 +215,9 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('월별 현금흐름 · 생활 충격')),
+    appBar: AppBar(
+      title: Text(widget.isOfflineDemo ? '완전 가상 · 현금흐름' : '월별 현금흐름 · 생활 충격'),
+    ),
     body: SafeArea(
       child: ListView(
         padding: const EdgeInsets.all(20),
@@ -462,7 +464,11 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
             ),
           ],
           if (_snapshotA != null && _snapshotB != null)
-            CashFlowComparisonView(a: _snapshotA!, b: _snapshotB!),
+            CashFlowComparisonView(
+              a: _snapshotA!,
+              b: _snapshotB!,
+              isOfflineDemo: widget.isOfflineDemo,
+            ),
           if (_result != null &&
               (widget.isOfflineDemo || _analyzedRequest != null)) ...[
             const SizedBox(height: 24),
