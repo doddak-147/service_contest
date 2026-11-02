@@ -123,3 +123,9 @@ python -m pytest -c apps/api/pyproject.toml scripts/tests
 ```
 
 개발 전에는 [AGENTS.md](AGENTS.md), [PRODUCT_SPEC.md](docs/PRODUCT_SPEC.md), [ARCHITECTURE.md](docs/ARCHITECTURE.md), [API_CONTRACT.md](docs/API_CONTRACT.md)를 확인합니다. 주가 데이터 검산 기준은 [MARKET_DATA_VALIDATION.md](docs/MARKET_DATA_VALIDATION.md)를 따릅니다.
+
+## 공모전 참고자료
+
+2026-11-02 공개용 7쪽 PDF·1분 13초 영상, 심사용 6쪽 PDF·1분 13초 영상, 메일 원본 증빙을 포함한 내부 안내서 6쪽을 만들었습니다. [자료 구성과 읽는 순서](docs/contest/리스크렌즈_참고자료_구성.md)를 참고하세요. PDF 마지막 쪽에 영상 파일을 첨부하고 별도 MP4도 동봉합니다.
+
+제출용 ZIP은 로컬 `output/submission/리스크렌즈_참고자료_제출용.zip`과 바탕화면 `공모전 용` 폴더에 있습니다. 실제 시세에서 유래한 심사 자료·메일 증빙·전체 ZIP은 Git에서 제외하며, 공개용에는 독립된 가상 예시만 사용합니다. 홈페이지 제출은 진행하지 않았습니다.
