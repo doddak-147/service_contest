@@ -45,6 +45,14 @@ API 측에서도 Twelve Data와 LLM의 429·500·읽기 시간 초과를 `MockTr
 
 확장한 시장 데이터 검증도 같은 날 사용자가 개인 키로 실행해 `PASS` 5개를 전달했다. AAPL·AMZN 분할 조정 가격 기준점, 두 종목 지정 구간의 독립 원화 위험 검산, 미국·ECB 휴장일 경계를 확인했다. 다른 제공자의 전체 시계열 검증으로 확대 해석하지 않으며 상세 범위는 `MARKET_DATA_VALIDATION.md`를 따른다.
 
+## 2026-11-02 기능 확장 자동 검증과 실기기 대기
+
+월별 현금흐름·생활 충격, 가격/MDD 그래프, 화면 내 A·B 비교, 위험 이해 체험을 구현했다. API·스크립트 164개, 최종 Flutter 78개, Ruff·Flutter analyze를 통과했다. 가격 그래프가 기존 요약과 다른 수익률·변동성·환율 기준일을 사용할 경우 표시를 거절하는 검사도 포함한다. 새 API 계약은 기존 요청·응답을 바꾸지 않고 추가했으며 LLM 입력은 확장하지 않았다.
+
+로컬 사설 QA API에서 AAPL 요약·가격 시계열의 HTTP 200과 관측치 63개를 확인했다. 실제 시계열 값은 공개 파일에 저장하지 않았다. USB 실기기는 초기 연결 후 설치 과정에서 응답하지 않았고 ADB 재시작 후 `unauthorized`로 바뀌었다. 휴대폰의 USB 디버깅 재승인과 `feature_expansion_test.dart` 실행, 화면 확인, 릴리스 재설치는 아직 완료하지 않았다.
+
+1.1.0(`versionCode=3`) release 빌드와 `apksigner` 검증은 통과했다. 인증서 SHA-256은 기존과 같은 `d9d2eead74b3e127fe8231ac8117567ec34d16fa68aa653ef9444a20792d4d54`, APK SHA-256은 `6C62F5077ADDA37AA8749D0990E28E6EBF4432B0D63AD753DF615C8355E5D02D`다. 새 현금흐름·가격 API는 운영 서버 배포 전이며 공개 종목 API 차단을 해제하지 않았다. 자세한 범위와 재실행 방법은 `FEATURE_EXPANSION.md`를 따른다.
+
 ## 운영 로그 점검
 
 `scripts/audit-server-logs.py`는 서버에서 `/etc/service-contest.env`의 현재 비밀키와 보관 중인 서비스 journal을 읽어 일치하는 줄 수만 출력한다. 로그 원문·키·재무값은 출력하거나 파일로 복사하지 않는다. 로컬 PowerShell에서 검사 파일을 전송한 후 서버 SSH 터미널에서 실행한다.

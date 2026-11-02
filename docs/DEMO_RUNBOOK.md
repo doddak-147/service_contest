@@ -34,6 +34,8 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 
 앱에서 서버 연결 → 가상 재무 예시 → 미국 주식·ETF 조회 → 과거 위험·원화 기준일 → Stress Test → 결합 결과·쉬운 설명 순서로 확인한다. 실제 개인정보를 시연에 입력할 필요는 없다. API 한도·AI 장애가 생기면 오류·기본 설명 사유를 확인하고 완전 가상 체험으로 진행할 수 있다.
 
+추가 기능은 홈의 월별 현금흐름에서 3·6·12개월과 생활 충격을 고르고 계산한다. 결과를 A에 보관하고 조건을 바꿔 재계산한 결과를 B에 보관하면 입력 차이와 현금·이자 차이를 확인할 수 있다. 가격 그래프는 과거 위험 결과에서 별도로 요청한다. 위험 이해 체험은 서버 없이 가능하다. 공개 자료에는 `오프라인 체험 · 완전 가상`에서 진입한 가상 현금흐름·가격 그래프·이해 사례를 사용한다.
+
 두 번째 터미널에서 앱 실행을 종료하면 USB 포트 전달을 제거한다. 첫 번째 터미널은 Ctrl+C로 종료하며 프로세스의 API 키 환경변수를 제거한다. USB를 분리하면 로컬 API 시연 연결도 종료된다.
 
 ## 실행 전 도구 확인
@@ -50,4 +52,4 @@ Set-Location C:\Users\Administrator\Documents\GitHub\service_contest
 .\scripts\build-release-apk.ps1
 ```
 
-현재 출력은 `output/apk/RiskLens-Android-1.0.1.apk`다. 운영 주소에는 공개 종목 데이터 차단이 적용되어 있다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.
+현재 출력은 `output/apk/RiskLens-Android-1.1.0.apk`다. 운영 주소에는 공개 종목 데이터 차단이 적용되어 있고 새 현금흐름 API는 아직 배포되지 않았다. 이 설치본에서는 새 기능의 완전 가상 사례를 사용할 수 있다. 서명 파일 복원·설치 절차는 [RELEASE_APK.md](RELEASE_APK.md)를 따른다. 실제 키는 앱 빌드 옵션에 넣지 않는다.

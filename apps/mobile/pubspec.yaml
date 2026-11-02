@@ -1,7 +1,7 @@
 name: financial_shock_preview
 description: 차입투자 금융 충격을 계산 결과로 확인하는 모바일 앱
 publish_to: 'none'
-version: 1.0.1+2
+version: 1.1.0+3
 
 environment:
   sdk: ^3.11.0
