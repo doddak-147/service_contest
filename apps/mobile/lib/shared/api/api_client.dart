@@ -39,11 +39,15 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  ApiClient({http.Client? client}) : _client = client ?? http.Client();
+  ApiClient({
+    http.Client? client,
+    Duration timeout = const Duration(seconds: 40),
+  }) : _client = client ?? http.Client(),
+       _timeout = timeout;
 
   final http.Client _client;
-  // 종목 확인과 시세 조회(각 최대 8초), 응답 처리 여유를 포함한다.
-  static const _timeout = Duration(seconds: 20);
+  // 종목 확인·시세·환율 조회 또는 AI의 30초 대기 후 기본 설명을 받을 여유.
+  final Duration _timeout;
 
   Future<Map<String, dynamic>> getJson(String path) async {
     final decoded = await _send(

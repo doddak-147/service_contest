@@ -19,6 +19,7 @@ class PricePoint:
     date: date
     adjusted_close: Decimal
     fx_date: date | None = None
+    usd_adjusted_close: Decimal | None = None
 
 
 class StockDataError(Exception):

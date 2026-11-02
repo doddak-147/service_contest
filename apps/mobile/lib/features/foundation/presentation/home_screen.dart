@@ -6,7 +6,9 @@ import '../../financial_health/presentation/financial_health_screen.dart';
 import '../../market_risk/presentation/market_risk_screen.dart';
 import '../../offline_demo/offline_demo_screen.dart';
 import '../../stress_test/presentation/stress_test_screen.dart';
+import '../../stress_test/presentation/cash_flow_screen.dart';
 import 'about_screen.dart';
+import 'risk_learning_screen.dart';
 import 'widgets/risk_lens_illustration.dart';
 import 'widgets/server_status_card.dart';
 
@@ -50,6 +52,20 @@ class HomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             _FeatureActionCard(
+              eyebrow: '3 · 6 · 12개월 · 생활 충격',
+              title: '월별 현금흐름과 생활 충격 살펴보기',
+              description: '소득·생활비·이자·원금 상환을 바꿔 현금 여력의 변화를 비교합니다.',
+              icon: Icons.account_balance_wallet_outlined,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => CashFlowScreen(apiClient: apiClient),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            _FeatureActionCard(
               eyebrow: '과거 데이터 · 위험 지표',
               title: '종목 과거 위험 분석하기',
               description: '과거 최대낙폭과 변동성을 객관적인 수치로 살펴봅니다.',
@@ -73,6 +89,20 @@ class HomeScreen extends StatelessWidget {
               },
               icon: const Icon(Icons.info_outline_rounded, size: 19),
               label: const Text('서비스 원칙 보기'),
+            ),
+            const SizedBox(height: 8),
+            _FeatureActionCard(
+              eyebrow: '가상 사례 · 선택하고 이해하기',
+              title: '짧은 위험 이해 체험',
+              description: '한 번에 5문제씩 풀며 회복률·환율·이자·현금의 차이를 확인합니다.',
+              icon: Icons.lightbulb_outline,
+              color: AppColors.primary,
+              backgroundColor: AppColors.primarySoft,
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => RiskLearningScreen(apiClient: apiClient),
+                ),
+              ),
             ),
           ],
         ),
@@ -142,7 +172,7 @@ class _QuickStartCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '예시는 재무 입력만 가상입니다. 종목을 선택하면 실제 과거 시세가 사용될 수 있습니다.',
+              '예시는 재무 입력만 가상입니다. 실제 과거 시세는 비공개 시연 환경에서만 사용되며 공개 운영 API에서는 제공되지 않습니다.',
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],

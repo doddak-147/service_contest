@@ -11,7 +11,7 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 - 비율은 소수로 전송한다. 예: 20%는 `0.20`, 30% 하락은 `-0.30`이다.
 - 날짜는 `YYYY-MM-DD`, 시각은 UTC ISO 8601 문자열을 사용한다.
 - 계산할 수 없는 값은 0이 아니라 `null`과 사유 코드를 사용한다.
-- 중간 계산은 반올림하지 않는다. API 직렬화 시 금액은 원 단위, 비율은 소수점 6자리 `ROUND_HALF_UP`을 적용한다.
+- 기본 계산은 API 직렬화 시 금액은 원 단위, 비율은 소수점 6자리 `ROUND_HALF_UP`을 적용한다. 월별 현금흐름은 실제 원 단위 지출을 합산하는 가정이므로 월별 이자·소득·지출과 정기 원금 상환액을 먼저 원 단위 반올림하며 마지막 상환에서 원금 잔여액을 정산한다.
 - 정확한 wire type과 필드명은 [API_CONTRACT.md](./API_CONTRACT.md)가 단일 기준이다.
 
 ## 2. 입력 모델
@@ -54,9 +54,19 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 종목, 분석 기간, 데이터 제공자·기준일·관측치와 함께 `period_return_rate`, `annualized_volatility`, `max_drawdown_rate`를 가진다. `max_drawdown_rate`는 `-1..0` 범위의 음수다. MDD 구간은 `peak_date`, `trough_date`, `recovery_date`로 표현하며 미회복 상태의 `recovery_date`는 `null`이다.
 `fx_rate_as_of`는 마지막 관측에 적용한 환율 날짜이며 국내 종목은 `null`이다. 미국 종목의 위험 지표는 원화 가격 시계열 기준이다.
 
+### MarketPriceHistoryResult
+
+기존 `market_risk` 요약과 `points`를 묶는다. 각 관측은 `date`, 첫 관측값 100 기준의 `krw_price_index`·선택적 `usd_price_index`, `fx_rate_as_of`다. 내부 `PricePoint.usd_adjusted_close`는 환산 전 USD 종가를 보존한다. 달러 관측이 없으면 곡선을 생략하거나 끊어서 표시하고 임의 환율을 만들지 않는다. 단위·계약은 API 계약 6절을 따른다.
+
+### CashFlowRequest와 CashFlowResult
+
+기존 `financial_profile`에 기간, 투자용 대출 만기·상환 방식, 소득·지출·금리·주가·환율 가정을 추가한다. 응답은 충격 전후 `baseline`·`shocked`의 월별 수입, 지출, 이자, 원금 상환, 순현금, 현금 잔액, 잔여 투자용 원금, 누적 이자를 가진다. `investment_effect`는 현금과 분리된 시점 평가 충격이다. 현금 시작값은 투자 후 남긴 비상자금이다. 기존 대출 잔액으로 새 월별 상환 경로를 추정하지 않는다. 정확한 필드·반올림·범위는 API 계약 5절을 따른다.
+
+모바일의 `CashFlowSnapshot`은 계산에 쓴 요청과 응답을 함께 보관하는 화면 내 A·B 슬롯이다. 서버 모델·DB·분석 이력을 추가하지 않는다.
+
 ### ScenarioResult
 
-`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd` 중 하나다. 각 결과는 다음을 가진다.
+`scenario_key`는 `up_20`, `flat`, `down_10`, `down_20`, `down_30`, `down_40`, `down_50`, `historical_mdd`, `custom` 중 하나다. `custom`은 직접 입력 충격과 현금흐름의 별도 평가 충격에 사용한다. 각 결과는 다음을 가진다.
 
 - 가정: `label`, 원화 기준 `assumed_return_rate`, `price_change_rate`, `exchange_rate_change_rate`
 - 자산·손익: `projected_investment_value_krw`, `investment_pnl_krw`, `investment_loss_krw`
@@ -80,6 +90,8 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 ## 4. AI 설명 모델
 
+위험 이해 체험의 별도 `QuizRequest`는 재현용 `seed`만 받는다. `QuizResult`는 출처·대체 사유와 서로 다른 주제의 5개 `QuizQuestion`을 가진다. 각 문제의 가상 전제·선택지·정답 위치·계산식·설명은 서버가 확정하며 LLM은 제목·도입만 구성한다. 사용자 재무·문제 선택·정오답 기록을 서버에 보내지 않는다. 모바일의 같은 DTO는 계약의 `correct_index` 등 `snake_case`를 사용한다.
+
 `ExplanationInput`은 결합 Report 전체가 아니라 선택한 결과의 최소 파생값만 가진다. 사용자 이름, 원본 소득, 원본 대출 목록, 비상자금 원금, 투자 의도는 포함하지 않는다.
 
 허용 값은 시나리오 키·수익률, 이미 계산된 손실, 자기자본·비상자금·고정지출 대비 비율, 순투자지분, 월 이자, 종목 MDD, 경고 코드다. `ExplanationResult`는 설명 문자열과 `llm` 또는 `template` 출처만 가지며 금융 숫자의 권위 있는 저장소가 아니다. OpenAI 연결이 실패하거나 출력 검증을 통과하지 못하면 동일 입력으로 만든 `template` 설명을 반환한다.
@@ -96,4 +108,6 @@ MVP의 모델은 데이터베이스 테이블이 아니라 FastAPI 요청·응�
 
 ## 6. MVP 이후 모델
 
-3·6·12개월 누적 이자, 상환 방식, 계정과 저장 이력은 현재 모델에 미리 넣지 않는다. 해당 기능을 시작할 때 개인정보·보존 정책과 함께 별도 모델을 설계한다.
+3·6·12개월 현금흐름·누적 이자·상환 방식은 현재 비영속 모델로 구현했다. 계정과 저장 이력은 추가하지 않는다.
+
+2026-11-02 운영 배포는 모델을 추가 변경하지 않았다. 같은 현금흐름·문제 DTO를 HTTPS에서 제공하며 시세 관련 DTO의 공개 제공은 차단한다. Google Drive에는 서명 파일의 암호화 백업만 보관하고 사용자 재무정보·시세·풀이 기록의 저장 모델을 만들지 않는다.

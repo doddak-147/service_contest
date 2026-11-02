@@ -288,7 +288,12 @@ class TwelveStockPriceAdapter(StockPriceAdapter):
                 if fx_day is None or (day - fx_day).days > 5:
                     continue
                 points.append(
-                    PricePoint(day, usd_close * rates[fx_day], fx_date=fx_day)
+                    PricePoint(
+                        day,
+                        usd_close * rates[fx_day],
+                        fx_date=fx_day,
+                        usd_adjusted_close=usd_close,
+                    )
                 )
             result = (source, instrument, tuple(points))
 

@@ -4,7 +4,12 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, Query, Request
 
 from app.features.market_risk.calculation import calculate_market_risk
-from app.features.market_risk.schemas import Instrument, MarketRiskResult
+from app.features.market_risk.history import build_price_history
+from app.features.market_risk.schemas import (
+    Instrument,
+    MarketPriceHistoryResult,
+    MarketRiskResult,
+)
 from app.integrations.stock_api.base import (
     InstrumentNotFoundError,
     MarketDataUnavailableError,
@@ -115,3 +120,39 @@ async def get_market_risk(
         data_source=data_source,
     )
     return MarketRiskResult.from_calculation(calc)
+
+
+@router.get(
+    "/market-risk/{market}/{symbol}/history", response_model=MarketPriceHistoryResult
+)
+async def get_market_price_history(
+    request: Request,
+    market: str,
+    symbol: str,
+    start_date: Annotated[date, Query()],
+    end_date: Annotated[date, Query()],
+    adapter: Annotated[StockPriceAdapter, Depends(get_stock_adapter)],
+) -> MarketPriceHistoryResult:
+    if start_date > end_date:
+        raise ApiValidationError(
+            [FieldError(field="start_date", reason="START_DATE_AFTER_END_DATE")]
+        )
+    try:
+        source, instrument, points = await adapter.get_price_history(
+            market, symbol, start_date, end_date
+        )
+        return build_price_history(instrument, points, start_date, end_date, source)
+    except InstrumentNotFoundError:
+        return _json_error(
+            request,
+            status_code=404,
+            code="INSTRUMENT_NOT_FOUND",
+            message="해당 종목을 찾을 수 없습니다.",
+        )  # type: ignore[return-value]
+    except MarketDataUnavailableError:
+        return _json_error(
+            request,
+            status_code=503,
+            code="MARKET_DATA_UNAVAILABLE",
+            message="가격 그래프를 가져올 수 없습니다.",
+        )  # type: ignore[return-value]
