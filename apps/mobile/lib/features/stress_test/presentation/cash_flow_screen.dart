@@ -9,6 +9,7 @@ import '../data/cash_flow_api.dart';
 import '../models/cash_flow_models.dart';
 import '../models/stress_test_models.dart';
 import 'widgets/cash_flow_result_view.dart';
+import 'widgets/cash_flow_comparison_view.dart';
 
 class CashFlowScreen extends StatefulWidget {
   const CashFlowScreen({
@@ -51,6 +52,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
   String? _error;
   CashFlowResult? _result;
   CashFlowRequest? _analyzedRequest;
+  CashFlowSnapshot? _snapshotA, _snapshotB;
 
   @override
   void initState() {
@@ -104,6 +106,16 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
 
   void _loadOffline() {
     _result = CashFlowFixtures.get(_months, _offlineShocks);
+    _analyzedRequest = CashFlowRequest(
+      financial_profile: OfflineDemoData.profile,
+      months: _months,
+      investment_currency: 'USD',
+      income_change_rate: _offlineShocks ? -.2 : 0,
+      expense_change_rate: _offlineShocks ? .1 : 0,
+      loan_rate_change: _offlineShocks ? .02 : 0,
+      price_change_rate: _offlineShocks ? -.2 : 0,
+      exchange_rate_change_rate: _offlineShocks ? -.1 : 0,
+    );
   }
 
   int _moneyField(String key) {
@@ -407,6 +419,50 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                 ),
               ),
             ),
+          if (_result != null &&
+              (widget.isOfflineDemo || _analyzedRequest != null)) ...[
+            const SizedBox(height: 16),
+            const Text('가정 A·B는 이 화면에서만 보관합니다. 화면을 닫으면 사라집니다.'),
+            Wrap(
+              spacing: 8,
+              runSpacing: 6,
+              children: [
+                OutlinedButton(
+                  onPressed: () => setState(
+                    () => _snapshotA = CashFlowSnapshot(
+                      _analyzedRequest!,
+                      _result!,
+                    ),
+                  ),
+                  child: const Text('가정 A로 보관'),
+                ),
+                OutlinedButton(
+                  onPressed: () => setState(
+                    () => _snapshotB = CashFlowSnapshot(
+                      _analyzedRequest!,
+                      _result!,
+                    ),
+                  ),
+                  child: const Text('가정 B로 보관'),
+                ),
+              ],
+            ),
+          ],
+          if (_snapshotA != null || _snapshotB != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              '보관 상태 · A ${_snapshotA == null ? '없음' : '${_snapshotA!.request.months}개월'} / B ${_snapshotB == null ? '없음' : '${_snapshotB!.request.months}개월'}',
+            ),
+            TextButton(
+              onPressed: () => setState(() {
+                _snapshotA = null;
+                _snapshotB = null;
+              }),
+              child: const Text('보관한 가정 비우기'),
+            ),
+          ],
+          if (_snapshotA != null && _snapshotB != null)
+            CashFlowComparisonView(a: _snapshotA!, b: _snapshotB!),
           if (_result != null &&
               (widget.isOfflineDemo || _analyzedRequest != null)) ...[
             const SizedBox(height: 24),

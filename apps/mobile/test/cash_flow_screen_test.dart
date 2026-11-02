@@ -21,6 +21,49 @@ Future<void> reveal(WidgetTester tester, Finder finder) async {
 }
 
 void main() {
+  testWidgets('가정 A·B는 조건과 결과를 따로 보관하고 화면을 닫으면 비운다', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        home: Builder(
+          builder: (context) => Scaffold(
+            body: TextButton(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (_) => const CashFlowScreen(isOfflineDemo: true),
+                ),
+              ),
+              child: const Text('체험 열기'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('체험 열기'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('가정 A로 보관'));
+    await tester.tap(find.text('가정 A로 보관'));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView).first, const Offset(0, 1500));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('소득−20%·생활비+10%·금리+2%p'));
+    await tester.tap(find.text('소득−20%·생활비+10%·금리+2%p'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('가정 B로 보관'));
+    await tester.tap(find.text('가정 B로 보관'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('가정 A · B 비교'));
+    expect(find.text('가정 A · B 비교'), findsOneWidget);
+    await reveal(tester, find.text('달라진 조건 5개'));
+    expect(find.text('달라진 조건 5개'), findsOneWidget);
+    await tester.pageBack();
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('체험 열기'));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('보관 상태'), findsNothing);
+    expect(find.text('가정 A · B 비교'), findsNothing);
+  });
+
   testWidgets('서버 없이 3·6·12개월 가상 현금흐름과 생활 충격을 본다', (tester) async {
     var calls = 0;
     final client = ApiClient(
