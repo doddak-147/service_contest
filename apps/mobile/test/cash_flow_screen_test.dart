@@ -131,7 +131,7 @@ void main() {
     await tester.drag(find.byType(ListView).first, const Offset(0, 2200));
     await tester.pumpAndSettle();
     await reveal(tester, find.text('소득 감소율'));
-    final income = find.widgetWithText(TextField, '소득 감소율');
+    final income = find.byKey(const ValueKey('cash-input-소득 감소율'));
     await tester.enterText(income, '20');
     await tester.pumpAndSettle();
     expect(find.text('생활 충격 · 6개월 결과'), findsNothing);
@@ -158,7 +158,7 @@ void main() {
     await tester.pump();
     await tester.drag(find.byType(ListView).first, const Offset(0, 1800));
     await tester.pump();
-    final income = find.widgetWithText(TextField, '소득 감소율');
+    final income = find.byKey(const ValueKey('cash-input-소득 감소율'));
     await reveal(tester, income);
     await tester.enterText(income, '10');
     await tester.pump();
@@ -189,6 +189,38 @@ void main() {
     );
     await tester.pumpAndSettle();
     await reveal(tester, find.byType(ComparisonLineChart));
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('좁은 화면의 큰 글자에서 입력과 대출 상환 선택이 잘리지 않는다', (tester) async {
+    tester.view.physicalSize = const Size(320, 740);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final client = ApiClient(
+      client: MockClient((_) async => throw StateError('No request')),
+    );
+    addTearDown(client.close);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: const TextScaler.linear(1.8)),
+          child: child!,
+        ),
+        home: CashFlowScreen(apiClient: client),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('투자용 대출 상환 가정'));
+    await tester.tap(find.text('투자용 대출 상환 가정'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.byType(DropdownButtonFormField<String>));
+    expect(tester.takeException(), isNull);
+    await tester.tap(find.byType(DropdownButtonFormField<String>));
+    await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });
 }

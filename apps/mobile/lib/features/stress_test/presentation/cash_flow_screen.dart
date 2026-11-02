@@ -216,7 +216,11 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(
-      title: Text(widget.isOfflineDemo ? '완전 가상 · 현금흐름' : '월별 현금흐름 · 생활 충격'),
+      toolbarHeight: MediaQuery.textScalerOf(context).scale(56).clamp(56, 100),
+      title: Text(
+        widget.isOfflineDemo ? '완전 가상 · 현금흐름' : '월별 현금흐름',
+        maxLines: 2,
+      ),
     ),
     body: SafeArea(
       child: ListView(
@@ -228,6 +232,23 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
           ),
           const SizedBox(height: 8),
           const Text('같은 조건이 유지되는 가정 계산입니다. 투자 평가손익과 실제 현금 지출을 분리합니다.'),
+          const ExpansionTile(
+            title: Text('이 기능은 어떻게 보나요?'),
+            childrenPadding: EdgeInsets.fromLTRB(8, 0, 8, 16),
+            children: [
+              Text(
+                '시작 현금은 투자 후 따로 남긴 비상자금입니다. 매달 수입에서 생활비·대출 상환·이자를 뺀 돈이 여기에 쌓이거나 줄어듭니다.',
+              ),
+              SizedBox(height: 8),
+              Text(
+                '기간과 생활 충격을 고른 뒤 현재 조건과 비교하세요. 현금 여력은 잔액, 월 수입·지출은 돈의 출입, 누적 이자는 납부한 이자의 합계입니다.',
+              ),
+              SizedBox(height: 8),
+              Text(
+                '투자 평가손실은 현금에서 바로 빼지 않습니다. 가정 A·B는 서로 다른 계산 결과를 비교하는 임시 보관함입니다.',
+              ),
+            ],
+          ),
           if (_usingExample)
             Padding(
               padding: const EdgeInsets.symmetric(vertical: 10),
@@ -318,6 +339,9 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
                 DropdownButtonFormField<String>(
                   key: ValueKey(_repayment),
                   initialValue: _repayment,
+                  isExpanded: true,
+                  isDense: false,
+                  itemHeight: null,
                   decoration: const InputDecoration(labelText: '상환 방식'),
                   items: const [
                     DropdownMenuItem(
@@ -491,19 +515,30 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
     bool term = false,
   }) => Padding(
     padding: const EdgeInsets.only(bottom: 16),
-    child: TextField(
-      controller: field,
-      onChanged: (_) => _invalidate(),
-      keyboardType: TextInputType.numberWithOptions(
-        decimal: decimal,
-        signed: decimal,
-      ),
-      inputFormatters: decimal
-          ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
-          : term
-          ? [FilteringTextInputFormatter.digitsOnly]
-          : const [KrwInputFormatter()],
-      decoration: InputDecoration(labelText: label, suffixText: suffix),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(label),
+        const SizedBox(height: 8),
+        Semantics(
+          label: label,
+          child: TextField(
+            key: ValueKey('cash-input-$label'),
+            controller: field,
+            onChanged: (_) => _invalidate(),
+            keyboardType: TextInputType.numberWithOptions(
+              decimal: decimal,
+              signed: decimal,
+            ),
+            inputFormatters: decimal
+                ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
+                : term
+                ? [FilteringTextInputFormatter.digitsOnly]
+                : const [KrwInputFormatter()],
+            decoration: InputDecoration(suffixText: suffix),
+          ),
+        ),
+      ],
     ),
   );
 }
