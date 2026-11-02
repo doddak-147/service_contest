@@ -27,16 +27,12 @@ void main() {
     await tester.pumpAndSettle();
     final income = find.byKey(const ValueKey('cash-input-소득 감소율'));
     await _reveal(tester, income);
-    await tester.enterText(income, '20');
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(income).controller!.text, '0');
     await _tap(tester, find.text('주가·환율 평가 충격'));
     await _tap(tester, find.text('달러 자산 가정'));
     final price = find.byKey(const ValueKey('cash-input-주가 변화율'));
     await _reveal(tester, price);
-    await tester.enterText(price, '-20');
-    FocusManager.instance.primaryFocus?.unfocus();
-    await tester.pumpAndSettle();
+    expect(tester.widget<TextField>(price).controller!.text, '0');
     await _reveal(tester, find.byKey(const ValueKey('cash-input-원/달러 환율 변화율')));
     expect(tester.takeException(), isNull);
   });

@@ -235,5 +235,12 @@ void main() {
     await reveal(tester, find.byKey(const ValueKey('cash-input-원/달러 환율 변화율')));
     expect(find.text('주가 변화율'), findsOneWidget);
     expect(tester.takeException(), isNull);
+    tester
+        .state<ScrollableState>(find.byType(Scrollable).first)
+        .position
+        .jumpTo(0);
+    await tester.pumpAndSettle();
+    await reveal(tester, find.byKey(const ValueKey('cash-input-원/달러 환율 변화율')));
+    expect(tester.takeException(), isNull);
   });
 }

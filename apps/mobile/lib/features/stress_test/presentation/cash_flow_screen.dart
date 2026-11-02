@@ -233,6 +233,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
           const SizedBox(height: 8),
           const Text('같은 조건이 유지되는 가정 계산입니다. 투자 평가손익과 실제 현금 지출을 분리합니다.'),
           const ExpansionTile(
+            key: PageStorageKey('cash-how-to'),
             title: Text('이 기능은 어떻게 보나요?'),
             childrenPadding: EdgeInsets.fromLTRB(8, 0, 8, 16),
             children: [
@@ -273,6 +274,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               label: const Text('가상 재무 예시 채우기'),
             ),
             ExpansionTile(
+              key: const PageStorageKey('cash-profile'),
               title: const Text('재무 조건 입력'),
               initiallyExpanded: widget.initialProfile == null,
               childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
@@ -334,6 +336,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
           ] else ...[
             const SizedBox(height: 16),
             ExpansionTile(
+              key: const PageStorageKey('cash-loan-assumptions'),
               title: const Text('투자용 대출 상환 가정'),
               initiallyExpanded: false,
               childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
@@ -373,6 +376,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               ],
             ),
             ExpansionTile(
+              key: const PageStorageKey('cash-living-shocks'),
               title: const Text('생활 충격 설정'),
               subtitle: const Text('소득 감소 · 생활비 증가 · 금리 상승'),
               initiallyExpanded: true,
@@ -401,6 +405,7 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
               ],
             ),
             ExpansionTile(
+              key: const PageStorageKey('cash-valuation-shocks'),
               title: const Text('주가·환율 평가 충격'),
               subtitle: const Text('현금 흐름과 별도로 표시'),
               childrenPadding: const EdgeInsets.fromLTRB(4, 12, 4, 8),
@@ -529,22 +534,25 @@ class _CashFlowScreenState extends State<CashFlowScreen> {
       children: [
         Text(label),
         const SizedBox(height: 8),
-        Semantics(
-          label: label,
-          child: TextField(
-            key: ValueKey('cash-input-$label'),
-            controller: field,
-            onChanged: (_) => _invalidate(),
-            keyboardType: TextInputType.numberWithOptions(
-              decimal: decimal,
-              signed: decimal,
+        KeyedSubtree(
+          key: PageStorageKey('cash-field-scroll-$label'),
+          child: Semantics(
+            label: label,
+            child: TextField(
+              key: ValueKey('cash-input-$label'),
+              controller: field,
+              onChanged: (_) => _invalidate(),
+              keyboardType: TextInputType.numberWithOptions(
+                decimal: decimal,
+                signed: decimal,
+              ),
+              inputFormatters: decimal
+                  ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
+                  : term
+                  ? [FilteringTextInputFormatter.digitsOnly]
+                  : const [KrwInputFormatter()],
+              decoration: InputDecoration(suffixText: suffix),
             ),
-            inputFormatters: decimal
-                ? [FilteringTextInputFormatter.allow(RegExp(r'[-0-9.]'))]
-                : term
-                ? [FilteringTextInputFormatter.digitsOnly]
-                : const [KrwInputFormatter()],
-            decoration: InputDecoration(suffixText: suffix),
           ),
         ),
       ],
