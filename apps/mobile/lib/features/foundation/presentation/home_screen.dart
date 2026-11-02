@@ -94,13 +94,13 @@ class HomeScreen extends StatelessWidget {
             _FeatureActionCard(
               eyebrow: '가상 사례 · 선택하고 이해하기',
               title: '짧은 위험 이해 체험',
-              description: '회복률·환율·이자·현금의 차이를 네 가지 사례로 확인합니다.',
+              description: '한 번에 5문제씩 풀며 회복률·환율·이자·현금의 차이를 확인합니다.',
               icon: Icons.lightbulb_outline,
               color: AppColors.primary,
               backgroundColor: AppColors.primarySoft,
               onTap: () => Navigator.of(context).push(
                 MaterialPageRoute<void>(
-                  builder: (_) => const RiskLearningScreen(),
+                  builder: (_) => RiskLearningScreen(apiClient: apiClient),
                 ),
               ),
             ),

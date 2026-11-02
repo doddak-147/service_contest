@@ -463,3 +463,33 @@ MarketPriceHistoryResult {
 - MDD 표식과 음영은 원화 요약의 고점·저점·회복일을 그대로 사용한다. 가로축은 관측 순서로 표시한다.
 - `PricePoint.usd_adjusted_close`는 어댑터 내부에만 추가하는 선택 속성이며 기존 financial-health·stress-test·combined-report 및 LLM JSON은 변경하지 않는다.
 - 공개 운영 Nginx의 `/market-risk/` 차단은 이 하위 경로에도 적용한다. 공개 오프라인 그래프는 독립적으로 만든 가상 곡선과 계산한 가상 지표만 사용한다.
+
+## 7. 위험 이해 체험 문제 구성 (2026-11-02)
+
+`POST /api/v1/risk-learning/quizzes`는 foundation 체험 영역의 추가 API다. 기존 financial-health·market-risk·stress-test·combined-report 요청과 계산은 바꾸지 않는다. 모바일의 홈 체험에서 명시적으로 새 AI 문제를 요청할 때 사용한다. 오프라인 체험에는 API 요청이 없다.
+
+```text
+QuizRequest { seed?: integer | null } // 0..2147483647; 재현용 가상 난수 시드
+QuizQuestion {
+  question_id: string
+  topic: string
+  title: string
+  intro: string
+  prompt: string
+  options: string[]       // 서로 다른 선택지 3개
+  correct_index: integer  // 0..2
+  formula: string
+  explanation: string
+}
+QuizResult {
+  source: "llm" | "template"
+  fallback_reason: "not_configured" | "provider_unavailable" | "safety_rejected" | null
+  questions: QuizQuestion[] // 서로 다른 주제의 5개 문제
+}
+```
+
+- 회복률·환율·복합 주가/환율 충격·누적 이자·현금흐름·평가손실·금리 상승·낙폭의 8개 주제에서 5개를 뽑는다. 가상 수치와 선택지 순서를 바꾸며 서버의 정수·Decimal 계산으로 정답·공식·설명을 확정한다.
+- LLM은 `title`과 `intro`만 구성한다. 주제명만 전송하며 재무 입력·실제 시세·계산 수치·정답·선택 기록을 전송하지 않는다. 고정된 문제 전제 `prompt`, 선택지·정답·공식·설명은 LLM 응답으로 덮어쓰지 않는다.
+- LLM 응답의 주제·길이·JSON 필드를 검사하며 숫자·수량·투자 권고·정답 노출·마크업은 거절한다. 검증 실패·설정 없음·제공자 장애 시 HTTP 200의 자체 문제와 사유를 반환한다. 구형 서버 오류·네트워크 실패는 모바일이 오프라인 문제로 대체한다.
+- 한 번 만든 AI 도입 문구는 프로세스 메모리에서 최대 10분 재사용한다. 매 묶음의 수치·주제·선택 순서는 새로 구성한다. 응답에는 `Cache-Control: no-store`를 적용하고 재무정보·문제 풀이 기록을 저장하지 않는다.
+- 모바일은 정답/오답을 색·아이콘·문구로 함께 표시하고 정답 확인 후 선택을 고정한다. 다섯 문제 뒤 새 묶음을 시작한다. 점수로 투자 적합성이나 투자 실력을 판단하지 않는다.

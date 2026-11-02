@@ -222,5 +222,18 @@ void main() {
     await tester.tap(find.byType(DropdownButtonFormField<String>));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
+    await tester.tap(find.text('매월 같은 원금 분할상환').last);
+    await tester.pumpAndSettle();
+    await reveal(tester, find.byKey(const ValueKey('cash-input-소득 감소율')));
+    expect(tester.takeException(), isNull);
+    await reveal(tester, find.text('주가·환율 평가 충격'));
+    await tester.tap(find.text('주가·환율 평가 충격'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.text('달러 자산 가정'));
+    await tester.tap(find.text('달러 자산 가정'));
+    await tester.pumpAndSettle();
+    await reveal(tester, find.byKey(const ValueKey('cash-input-원/달러 환율 변화율')));
+    expect(find.text('주가 변화율'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 }

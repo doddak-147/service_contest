@@ -108,19 +108,20 @@ void main() {
   });
 
   testWidgets('휴대폰에서 위험 이해 체험 네 사례를 끝까지 진행한다', (tester) async {
-    await _show(tester, const RiskLearningScreen());
-    for (var index = 0; index < riskLessons.length; index++) {
-      final lesson = riskLessons[index];
-      await _tap(tester, find.text(lesson.options[lesson.correctIndex]));
-      await _tap(tester, find.text('계산 근거 확인'));
+    await _show(tester, const RiskLearningScreen(offlineSeed: 17));
+    final questions = offlineRiskQuiz(seed: 17).questions;
+    for (var index = 0; index < questions.length; index++) {
+      final lesson = questions[index];
+      await _tap(tester, find.text(lesson.options[lesson.correct_index]));
+      await _tap(tester, find.text('정답 확인'));
       await _reveal(tester, find.text(lesson.formula));
       expect(find.text(lesson.formula), findsOneWidget);
       await _tap(
         tester,
-        find.text(index == riskLessons.length - 1 ? '처음부터 다시 체험' : '다음 사례'),
+        find.text(index == questions.length - 1 ? '새 5문제 시작' : '다음 문제'),
       );
     }
-    expect(find.textContaining('1/4'), findsOneWidget);
+    expect(find.textContaining('1/5'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
